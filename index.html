@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<!-- FILE 1: save as index.html -->
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FuelPlan — Personalised Nutrition Plans Australia</title>
+<meta name="description" content="Science-backed cutting and bulking meal plans delivered to your inbox. Lose fat, build muscle, and transform your body with FuelPlan Australia."/>
+<meta name="keywords" content="nutrition plan Australia, meal plan, cutting plan, bulking plan, fat loss meal plan, muscle gain meal plan, FuelPlan"/>
+<meta property="og:title" content="FuelPlan — Personalised Nutrition Plans Australia"/>
+<meta property="og:description" content="Science-backed cutting and bulking meal plans delivered to your inbox. Start transforming your body today."/>
+<meta property="og:type" content="website"/>
+<link rel="canonical" href="https://fuelplan.com.au"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--black:#0a0a0a;--white:#fff;--gray:#1a1a1a;--gray2:#2a2a2a;--gray3:#3a3a3a;--muted:#888;--accent:#c8f04a;--accent2:#a8d030;--text:#f0f0f0;--radius:12px}
+  body{background:var(--black);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6}
+  a{color:inherit;text-decoration:none}
+  nav{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 2rem;border-bottom:1px solid #1f1f1f;position:sticky;top:0;background:rgba(10,10,10,0.95);backdrop-filter:blur(8px);z-index:100}
+  .logo{font-size:1.3rem;font-weight:700;letter-spacing:-0.5px}
+  .logo span{color:var(--accent)}
+  .nav-btn{background:var(--accent);color:var(--black);padding:0.5rem 1.2rem;border-radius:50px;font-weight:600;font-size:0.85rem;cursor:pointer;border:none}
+  .nav-btn:hover{background:var(--accent2)}
+
+  /* Hero */
+  .hero{text-align:center;padding:5rem 2rem 4rem;max-width:800px;margin:0 auto}
+  .hero-badge{display:inline-block;background:#1a1a1a;border:1px solid #333;border-radius:50px;padding:0.4rem 1rem;font-size:0.8rem;color:var(--muted);margin-bottom:1.5rem;letter-spacing:0.5px;text-transform:uppercase}
+  .hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;line-height:1.1;letter-spacing:-1px;margin-bottom:1.2rem}
+  .hero h1 span{color:var(--accent)}
+  .hero p{font-size:1.1rem;color:var(--muted);max-width:520px;margin:0 auto 2.5rem}
+  .hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+  .btn-primary{background:var(--accent);color:var(--black);padding:0.85rem 2rem;border-radius:50px;font-weight:700;font-size:1rem;cursor:pointer;border:none;transition:background 0.2s,transform 0.1s}
+  .btn-primary:hover{background:var(--accent2);transform:scale(1.02)}
+  .btn-secondary{background:transparent;color:var(--text);padding:0.85rem 2rem;border-radius:50px;font-weight:600;font-size:1rem;cursor:pointer;border:1px solid #333;transition:border-color 0.2s}
+  .btn-secondary:hover{border-color:#555}
+  .hero-stats{display:flex;gap:2.5rem;justify-content:center;margin-top:3.5rem;flex-wrap:wrap}
+  .stat{text-align:center}
+  .stat-num{font-size:2rem;font-weight:800;color:var(--accent)}
+  .stat-label{font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+
+  /* Section */
+  section{padding:4rem 2rem;max-width:1000px;margin:0 auto}
+  .section-tag{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:0.5rem}
+  .section-title{font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;letter-spacing:-0.5px;margin-bottom:0.5rem}
+  .section-sub{color:var(--muted);font-size:1rem;margin-bottom:2.5rem}
+
+  /* Plans */
+  .plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem}
+  .plan-card{background:var(--gray);border:1px solid #2f2f2f;border-radius:var(--radius);padding:2rem;position:relative;overflow:hidden;transition:border-color 0.2s}
+  .plan-card:hover{border-color:#444}
+  .plan-card.featured{border-color:var(--accent)}
+  .plan-badge{position:absolute;top:1rem;right:1rem;background:var(--accent);color:var(--black);font-size:0.7rem;font-weight:700;padding:0.25rem 0.7rem;border-radius:50px;text-transform:uppercase;letter-spacing:0.5px}
+  .plan-icon{font-size:2rem;margin-bottom:1rem}
+  .plan-name{font-size:1.3rem;font-weight:700;margin-bottom:0.3rem}
+  .plan-tagline{color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem}
+  .plan-price{font-size:2.4rem;font-weight:800;margin-bottom:0.3rem}
+  .plan-price span{font-size:1rem;font-weight:400;color:var(--muted)}
+  .plan-includes{list-style:none;margin:1.2rem 0 1.8rem}
+  .plan-includes li{font-size:0.9rem;color:#bbb;padding:0.35rem 0;display:flex;align-items:center;gap:0.5rem}
+  .plan-includes li::before{content:'✓';color:var(--accent);font-weight:700;font-size:0.85rem}
+  .plan-btn{width:100%;padding:0.85rem;border-radius:50px;font-weight:700;font-size:0.95rem;cursor:pointer;border:none;transition:background 0.2s}
+  .plan-btn.primary{background:var(--accent);color:var(--black)}
+  .plan-btn.primary:hover{background:var(--accent2)}
+  .plan-btn.outline{background:transparent;color:var(--text);border:1px solid #444}
+  .plan-btn.outline:hover{border-color:#666}
+
+  /* How it works */
+  .hiw-section{background:#0f0f0f;border-radius:16px;padding:3rem 2rem;margin:0 2rem}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-top:2rem}
+  .step{text-align:center;padding:1rem}
+  .step-num{width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--black);font-weight:800;font-size:1.1rem;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem}
+  .step h3{font-size:1rem;font-weight:700;margin-bottom:0.4rem}
+  .step p{font-size:0.88rem;color:var(--muted)}
+
+  /* Testimonials */
+  .testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem}
+  .testi-card{background:var(--gray);border:1px solid #2a2a2a;border-radius:var(--radius);padding:1.5rem}
+  .testi-stars{color:var(--accent);font-size:0.85rem;margin-bottom:0.8rem;letter-spacing:2px}
+  .testi-text{font-size:0.92rem;color:#ccc;margin-bottom:1rem;line-height:1.6}
+  .testi-author{display:flex;align-items:center;gap:0.7rem}
+  .testi-avatar{width:36px;height:36px;border-radius:50%;background:var(--gray3);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;color:var(--accent)}
+  .testi-name{font-size:0.85rem;font-weight:600}
+  .testi-meta{font-size:0.78rem;color:var(--muted)}
+
+  /* FAQ */
+  .faq-list{display:flex;flex-direction:column;gap:0.8rem}
+  .faq-item{background:var(--gray);border:1px solid #2a2a2a;border-radius:var(--radius);overflow:hidden}
+  .faq-q{padding:1.1rem 1.5rem;font-weight:600;font-size:0.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+  .faq-q:hover{background:var(--gray2)}
+  .faq-arrow{color:var(--accent);font-size:1.2rem;transition:transform 0.2s;flex-shrink:0}
+  .faq-a{display:none;padding:0 1.5rem 1.1rem;font-size:0.9rem;color:var(--muted);line-height:1.7}
+  .faq-item.open .faq-a{display:block}
+  .faq-item.open .faq-arrow{transform:rotate(45deg)}
+
+  /* CTA */
+  .cta-section{text-align:center;padding:5rem 2rem;background:linear-gradient(135deg,#0f1a00,#0a0a0a);border-top:1px solid #1a1a1a}
+  .cta-section h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-1px;margin-bottom:1rem}
+  .cta-section h2 span{color:var(--accent)}
+  .cta-section p{color:var(--muted);font-size:1rem;margin-bottom:2rem}
+
+  /* Footer */
+  footer{text-align:center;padding:2rem;border-top:1px solid #1a1a1a;color:var(--muted);font-size:0.85rem}
+  footer a{color:var(--accent);margin:0 0.5rem}
+
+  @media(max-width:600px){
+    .hero{padding:3rem 1.5rem 2.5rem}
+    .hero-stats{gap:1.5rem}
+    nav{padding:1rem 1.2rem}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Fuel<span>Plan</span></div>
+  <button class="nav-btn" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">Get My Plan</button>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">Personalised Nutrition</div>
+  <h1>Transform Your Body<br>With the <span>Right Fuel</span></h1>
+  <p>Science-backed meal plans built around your goals. Whether you're cutting fat or building muscle — we've got your nutrition locked in.</p>
+  <div class="hero-btns">
+    <button class="btn-primary" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">View Plans</button>
+    <button class="btn-secondary" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">How It Works</button>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">200+</div><div class="stat-label">Clients Transformed</div></div>
+    <div class="stat"><div class="stat-num">98%</div><div class="stat-label">Satisfaction Rate</div></div>
+    <div class="stat"><div class="stat-num">4 wk</div><div class="stat-label">Average Results</div></div>
+  </div>
+</div>
+
+<!-- Plans -->
+<section id="plans">
+  <div class="section-tag">Nutrition Plans</div>
+  <div class="section-title">Choose Your Goal</div>
+  <div class="section-sub">Pick the plan that matches where you want to go.</div>
+  <div class="plans-grid">
+
+    <div class="plan-card">
+      <div class="plan-icon">🔥</div>
+      <div class="plan-name">Cutting Plan</div>
+      <div class="plan-tagline">Burn fat, keep muscle</div>
+      <div class="plan-price">$49<span> / plan</span></div>
+      <ul class="plan-includes">
+        <li>Full 4-week meal plan</li>
+        <li>Daily calorie & macro targets</li>
+        <li>Grocery shopping list</li>
+        <li>Meal prep guide</li>
+        <li>Email support</li>
+      </ul>
+      <button class="plan-btn outline" onclick="window.location.href='https://buy.stripe.com/14A8wP0nVda2cky8Og9Zm00'">Buy Cutting Plan</button>
+    </div>
+
+    <div class="plan-card featured">
+      <div class="plan-badge">Most Popular</div>
+      <div class="plan-icon">💪</div>
+      <div class="plan-name">Bulking Plan</div>
+      <div class="plan-tagline">Build size & strength</div>
+      <div class="plan-price">$49<span> / plan</span></div>
+      <ul class="plan-includes">
+        <li>Full 4-week meal plan</li>
+        <li>Daily calorie & macro targets</li>
+        <li>Grocery shopping list</li>
+        <li>Meal prep guide</li>
+        <li>Email support</li>
+      </ul>
+      <button class="plan-btn primary" onclick="window.location.href='https://buy.stripe.com/9B6eVd2w3c5Y3O2aWo9Zm01'">Buy Bulking Plan</button>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-icon">⚡</div>
+      <div class="plan-name">Cut + Bulk Bundle</div>
+      <div class="plan-tagline">Both plans, better value</div>
+      <div class="plan-price">$79<span> / bundle</span></div>
+      <ul class="plan-includes">
+        <li>Everything in both plans</li>
+        <li>Phase switching guide</li>
+        <li>Priority email support</li>
+        <li>Free plan update after 8 wks</li>
+        <li>Save $19 vs buying separate</li>
+      </ul>
+      <button class="plan-btn outline" onclick="window.location.href='https://buy.stripe.com/14A8wP2w3fiaacq4y09Zm02'">Buy Bundle</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- How It Works -->
+<div id="how">
+  <div class="hiw-section" style="max-width:1000px;margin:0 auto 4rem">
+    <div style="text-align:center">
+      <div class="section-tag">The Process</div>
+      <div class="section-title">How It Works</div>
+      <div class="section-sub">Three steps to your new nutrition plan.</div>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Choose Your Plan</h3>
+        <p>Pick cutting, bulking, or the bundle depending on your current goal.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Complete Checkout</h3>
+        <p>Secure payment via Stripe. Takes less than 60 seconds.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Receive Your Plan</h3>
+        <p>Your full meal plan lands in your inbox within 24 hours. Start eating right.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Testimonials -->
+<section id="reviews">
+  <div class="section-tag">Results</div>
+  <div class="section-title">What Clients Say</div>
+  <div class="section-sub">Real people, real results.</div>
+  <div class="testi-grid">
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"Lost 8kg in 6 weeks following the cutting plan. The meal prep guide made it so easy to stick to."</div>
+      <div class="testi-author">
+        <div class="testi-avatar">JM</div>
+        <div><div class="testi-name">James M.</div><div class="testi-meta">Cutting Plan</div></div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"Finally a bulking plan that doesn't just tell you to eat everything. Clean gains, no fluff."</div>
+      <div class="testi-author">
+        <div class="testi-avatar">TK</div>
+        <div><div class="testi-name">Tariq K.</div><div class="testi-meta">Bulking Plan</div></div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"Got the bundle — did a cut first then transitioned to the bulk. Best investment I've made in my fitness."</div>
+      <div class="testi-author">
+        <div class="testi-avatar">SR</div>
+        <div><div class="testi-name">Sofia R.</div><div class="testi-meta">Cut + Bulk Bundle</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="section-tag">FAQ</div>
+  <div class="section-title">Common Questions</div>
+  <div class="section-sub" style="margin-bottom:2rem">Everything you need to know before buying.</div>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How do I receive my plan after purchasing? <span class="faq-arrow">+</span></div>
+      <div class="faq-a">Once your payment is confirmed, you'll receive your full meal plan via email within 24 hours. Make sure to check your spam folder if you don't see it.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Are the plans suitable for all fitness levels? <span class="faq-arrow">+</span></div>
+      <div class="faq-a">Yes. The plans are designed to work whether you're just starting out or are already training seriously. Calorie targets and meal options are clearly laid out so you can adjust as needed.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Do I need to buy specific supplements? <span class="faq-arrow">+</span></div>
+      <div class="faq-a">No. The plans are built around whole foods and don't require any supplements. You can add them if you want, but they're not necessary to get results.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is there a refund policy? <span class="faq-arrow">+</span></div>
+      <div class="faq-a">Due to the digital nature of the plans, all sales are final. If you have any issues with your plan, reach out and we'll make it right.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can I use this plan alongside my own training program? <span class="faq-arrow">+</span></div>
+      <div class="faq-a">Absolutely. These are nutrition-only plans that complement any training style, whether you're doing gym, calisthenics, sports, or cardio.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2>Ready to <span>Change Your Body?</span></h2>
+  <p>Get your personalised meal plan today and start seeing results in weeks.</p>
+  <button class="btn-primary" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">Get My Plan Now</button>
+</div>
+
+<!-- Footer -->
+<footer>
+  <p>© 2026 FuelPlan &nbsp;·&nbsp; <a href="mailto:hello@fuelplan.com">hello@fuelplan.com</a></p>
+</footer>
+
+<script>
+function toggleFaq(el){
+  const item=el.closest('.faq-item');
+  item.classList.toggle('open');
+}
+</script>
+</body>
+</html>

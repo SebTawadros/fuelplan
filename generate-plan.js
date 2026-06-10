@@ -1,0 +1,54 @@
+// FILE 3: save as generate-plan.js (goes inside netlify/functions/)
+// This runs on Netlify's servers, keeping your API key secret.
+
+exports.handler = async (event) => {
+  // Only allow POST requests
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
+
+  try {
+    const { prompt } = JSON.parse(event.body);
+
+    if (!prompt || typeof prompt !== "string" || prompt.length > 5000) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Invalid request" }) };
+    }
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Anthropic API error:", errText);
+      return { statusCode: 502, body: JSON.stringify({ error: "AI generation failed" }) };
+    }
+
+    const data = await response.json();
+
+    // Extract just the text from Claude's response
+    const text = data.content
+      .filter((block) => block.type === "text")
+      .map((block) => block.text)
+      .join("");
+
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    };
+  } catch (err) {
+    console.error("Function error:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: "Server error" }) };
+  }
+};

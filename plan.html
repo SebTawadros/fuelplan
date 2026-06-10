@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<!-- FILE 2: save as plan.html -->
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FuelPlan — Your Personalised Plan</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--black:#0a0a0a;--gray:#1a1a1a;--gray2:#2a2a2a;--muted:#888;--accent:#c8f04a;--accent2:#a8d030;--text:#f0f0f0;--radius:12px}
+  body{background:var(--black);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6;min-height:100vh}
+  nav{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 2rem;border-bottom:1px solid #1f1f1f}
+  .logo{font-size:1.3rem;font-weight:700}
+  .logo span{color:var(--accent)}
+  .badge{font-size:0.7rem;background:#1f2a0a;color:var(--accent);border:1px solid #3a4a1a;padding:0.25rem 0.7rem;border-radius:50px;font-weight:700;letter-spacing:0.5px}
+
+  .container{max-width:760px;margin:0 auto;padding:2.5rem 1.5rem}
+  h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.5px;margin-bottom:0.4rem}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--muted);margin-bottom:2rem;font-size:0.95rem}
+
+  .form-card{background:var(--gray);border:1px solid #2a2a2a;border-radius:var(--radius);padding:1.8rem}
+  .form-group{margin-bottom:1.3rem}
+  label{display:block;font-size:0.85rem;font-weight:600;margin-bottom:0.45rem;color:#ccc}
+  input[type=number],input[type=text],select,textarea{width:100%;background:#111;border:1px solid #333;border-radius:8px;padding:0.7rem 0.9rem;color:var(--text);font-size:0.95rem;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  textarea{resize:vertical;min-height:60px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .pill-group{display:flex;gap:0.5rem;flex-wrap:wrap}
+  .pill{background:#111;border:1px solid #333;border-radius:50px;padding:0.5rem 1.1rem;font-size:0.85rem;cursor:pointer;user-select:none;transition:all 0.15s;color:#ccc}
+  .pill:hover{border-color:#555}
+  .pill.active{background:var(--accent);color:var(--black);border-color:var(--accent);font-weight:700}
+  .gen-btn{width:100%;background:var(--accent);color:var(--black);border:none;border-radius:50px;padding:1rem;font-size:1.05rem;font-weight:800;cursor:pointer;margin-top:0.5rem;transition:background 0.2s}
+  .gen-btn:hover{background:var(--accent2)}
+  .gen-btn:disabled{background:#3a3a3a;color:#777;cursor:not-allowed}
+  .hint{font-size:0.75rem;color:#666;margin-top:0.3rem}
+
+  /* Loading */
+  #loading{display:none;text-align:center;padding:4rem 1rem}
+  .spinner{width:54px;height:54px;border:4px solid #2a2a2a;border-top-color:var(--accent);border-radius:50%;margin:0 auto 1.5rem;animation:spin 0.9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loadmsg{color:var(--muted);font-size:0.95rem}
+  .load-title{font-weight:700;font-size:1.2rem;margin-bottom:0.4rem}
+
+  /* Error */
+  #errorbox{display:none;background:#2a0f0f;border:1px solid #5a2a2a;border-radius:var(--radius);padding:1.3rem;margin-top:1.5rem;text-align:center}
+  #errorbox p{color:#f0a0a0;font-size:0.9rem;margin-bottom:0.8rem}
+  .retry-btn{background:transparent;border:1px solid #f0a0a0;color:#f0a0a0;border-radius:50px;padding:0.5rem 1.5rem;cursor:pointer;font-weight:600}
+
+  /* Results */
+  #results{display:none}
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.8rem;margin-bottom:1.8rem}
+  .stat-card{background:var(--gray);border:1px solid #2a2a2a;border-radius:var(--radius);padding:1.1rem;text-align:center}
+  .stat-card .val{font-size:1.5rem;font-weight:800;color:var(--accent)}
+  .stat-card .lbl{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+  .day-card{background:var(--gray);border:1px solid #2a2a2a;border-radius:var(--radius);padding:1.4rem;margin-bottom:1rem}
+  .day-title{font-weight:800;font-size:1.05rem;color:var(--accent);margin-bottom:0.9rem;text-transform:uppercase;letter-spacing:0.5px}
+  .meal{padding:0.7rem 0;border-bottom:1px solid #242424}
+  .meal:last-child{border-bottom:none}
+  .meal-type{font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700}
+  .meal-name{font-weight:700;font-size:0.97rem;margin:0.15rem 0}
+  .meal-desc{font-size:0.86rem;color:#aaa}
+  .meal-macros{font-size:0.78rem;color:var(--accent);margin-top:0.25rem;font-weight:600}
+  .grocery-card{background:var(--gray);border:1px solid #2a2a2a;border-radius:var(--radius);padding:1.4rem;margin-bottom:1rem}
+  .gro-cat{font-weight:700;color:var(--accent);font-size:0.9rem;margin:0.9rem 0 0.4rem;text-transform:uppercase;letter-spacing:0.5px}
+  .gro-cat:first-child{margin-top:0}
+  .gro-items{font-size:0.88rem;color:#bbb;line-height:1.9}
+  .section-h{font-size:1.3rem;font-weight:800;margin:2rem 0 1rem}
+  .tip-box{background:#101a05;border:1px solid #2a3a12;border-radius:var(--radius);padding:1.2rem;font-size:0.9rem;color:#cde0a0;margin-bottom:1rem}
+  .actions{display:flex;gap:0.8rem;margin-top:1.5rem;flex-wrap:wrap}
+  .dl-btn{flex:1;background:var(--accent);color:var(--black);border:none;border-radius:50px;padding:0.9rem;font-weight:800;font-size:0.95rem;cursor:pointer;min-width:180px}
+  .dl-btn:hover{background:var(--accent2)}
+  .new-btn{flex:1;background:transparent;color:var(--text);border:1px solid #444;border-radius:50px;padding:0.9rem;font-weight:600;font-size:0.95rem;cursor:pointer;min-width:180px}
+
+  @media print{
+    body{background:#fff;color:#111}
+    nav,.actions,.tip-box{display:none!important}
+    .form-card,#loading{display:none!important}
+    #results{display:block!important}
+    .day-card,.grocery-card,.stat-card{background:#fff;border:1px solid #ccc;break-inside:avoid}
+    .stat-card .val,.day-title,.gro-cat,.meal-macros{color:#3a5a00}
+    .meal-desc,.gro-items{color:#444}
+    .meal-type{color:#777}
+    h1 span{color:#3a5a00}
+    .sub{color:#666}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Fuel<span>Plan</span></div>
+  <div class="badge">AI PERSONALISED</div>
+</nav>
+
+<div class="container">
+
+  <!-- FORM -->
+  <div id="formview">
+    <h1>Build Your <span>Personalised Plan</span></h1>
+    <p class="sub">Answer a few questions and we'll generate a meal plan built specifically for your body and goals.</p>
+
+    <div class="form-card">
+      <div class="form-group">
+        <label>Your Goal</label>
+        <div class="pill-group" id="goalPills">
+          <div class="pill active" data-val="cut">🔥 Cut (lose fat)</div>
+          <div class="pill" data-val="bulk">💪 Bulk (gain muscle)</div>
+          <div class="pill" data-val="maintain">⚖️ Maintain</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Current Weight (kg)</label>
+          <input type="number" id="weight" placeholder="e.g. 80" min="30" max="300"/>
+        </div>
+        <div class="form-group">
+          <label>Target Weight (kg)</label>
+          <input type="number" id="target" placeholder="e.g. 72" min="30" max="300"/>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="age" placeholder="e.g. 25" min="16" max="100"/>
+        </div>
+        <div class="form-group">
+          <label>Gender</label>
+          <select id="gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Height (cm)</label>
+        <input type="number" id="height" placeholder="e.g. 178" min="100" max="250"/>
+      </div>
+
+      <div class="form-group">
+        <label>Activity Level</label>
+        <select id="activity">
+          <option value="sedentary">Sedentary (little exercise)</option>
+          <option value="light">Lightly active (1-3 workouts/week)</option>
+          <option value="moderate" selected>Moderately active (3-5 workouts/week)</option>
+          <option value="very">Very active (6-7 workouts/week)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Meals Per Day</label>
+        <div class="pill-group" id="mealPills">
+          <div class="pill" data-val="3">3 meals</div>
+          <div class="pill active" data-val="4">3 meals + snack</div>
+          <div class="pill" data-val="5">5 small meals</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Food Preferences / Dietary Restrictions</label>
+        <textarea id="prefs" placeholder="e.g. halal, no dairy, vegetarian, high protein, love chicken and rice..."></textarea>
+        <div class="hint">Include any allergies here, e.g. nuts, shellfish, gluten</div>
+      </div>
+
+      <div class="form-group">
+        <label>Foods You Hate</label>
+        <textarea id="hates" placeholder="e.g. mushrooms, olives, tuna..."></textarea>
+      </div>
+
+      <button class="gen-btn" id="genBtn" onclick="generatePlan()">⚡ Generate My Plan</button>
+    </div>
+
+    <div id="errorbox">
+      <p id="errormsg">Something went wrong generating your plan.</p>
+      <button class="retry-btn" onclick="generatePlan()">Try Again</button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="load-title">Building your plan...</div>
+    <p id="loadmsg">Calculating your calorie targets</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <h1>Your <span>FuelPlan</span></h1>
+    <p class="sub" id="planSummary"></p>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="tip-box" id="hydration"></div>
+
+    <div class="section-h">📅 Your 7-Day Meal Plan</div>
+    <div id="daysContainer"></div>
+
+    <div class="section-h">🛒 Grocery List</div>
+    <div class="grocery-card" id="groceryContainer"></div>
+
+    <div class="actions">
+      <button class="dl-btn" onclick="window.print()">⬇ Download as PDF</button>
+      <button class="new-btn" onclick="resetForm()">Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Pill selectors
+function setupPills(id){
+  const group = document.getElementById(id);
+  group.querySelectorAll('.pill').forEach(p => {
+    p.onclick = () => {
+      group.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+    };
+  });
+}
+setupPills('goalPills');
+setupPills('mealPills');
+
+function getPill(id){
+  return document.getElementById(id).querySelector('.pill.active').dataset.val;
+}
+
+// Calorie calculation (Mifflin-St Jeor)
+function calcTargets(w, h, age, gender, activity, goal){
+  let bmr = (10 * w) + (6.25 * h) - (5 * age) + (gender === 'male' ? 5 : -161);
+  const mult = {sedentary: 1.2, light: 1.375, moderate: 1.55, very: 1.725}[activity];
+  let tdee = bmr * mult;
+  let cals = goal === 'cut' ? tdee * 0.8 : goal === 'bulk' ? tdee * 1.12 : tdee;
+  cals = Math.round(cals / 10) * 10;
+  const protein = Math.round(w * (goal === 'cut' ? 2.2 : 2.0));
+  const fats = Math.round((cals * 0.25) / 9);
+  const carbs = Math.round((cals - protein * 4 - fats * 9) / 4);
+  return {cals, protein, carbs, fats};
+}
+
+const loadMsgs = [
+  "Calculating your calorie targets",
+  "Balancing your macros",
+  "Selecting meals you'll actually enjoy",
+  "Building your grocery list",
+  "Finalising your 7-day plan"
+];
+let loadInterval;
+
+async function generatePlan(){
+  const w = parseFloat(document.getElementById('weight').value);
+  const t = parseFloat(document.getElementById('target').value);
+  const age = parseInt(document.getElementById('age').value);
+  const h = parseFloat(document.getElementById('height').value);
+
+  if(!w || !t || !age || !h){
+    alert('Please fill in your weight, target weight, age and height.');
+    return;
+  }
+
+  const gender = document.getElementById('gender').value;
+  const activity = document.getElementById('activity').value;
+  const goal = getPill('goalPills');
+  const meals = getPill('mealPills');
+  const prefs = document.getElementById('prefs').value.trim() || 'No specific preferences';
+  const hates = document.getElementById('hates').value.trim() || 'None';
+
+  const targets = calcTargets(w, h, age, gender, activity, goal);
+
+  // UI: loading
+  document.getElementById('formview').style.display = 'none';
+  document.getElementById('errorbox').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  let mi = 0;
+  loadInterval = setInterval(() => {
+    mi = (mi + 1) % loadMsgs.length;
+    document.getElementById('loadmsg').textContent = loadMsgs[mi];
+  }, 2500);
+
+  const prompt = `You are a professional sports nutritionist creating a personalised meal plan.
+
+CLIENT:
+- Goal: ${goal} (current ${w}kg, target ${t}kg)
+- Age ${age}, ${gender}, ${h}cm, activity: ${activity}
+- Meals per day: ${meals}
+- Preferences/restrictions: ${prefs}
+- Hates: ${hates}
+
+TARGETS (already calculated, build the plan around these):
+- Daily calories: ${targets.cals}
+- Protein: ${targets.protein}g | Carbs: ${targets.carbs}g | Fats: ${targets.fats}g
+
+Respond ONLY with valid JSON, no markdown fences, no preamble. Keep meal descriptions to one short sentence. Use this exact structure:
+{
+  "summary": "1-2 sentence overview of the plan approach",
+  "hydration": "Daily water recommendation in litres with 1 sentence why",
+  "days": [
+    {"day": "Day 1", "meals": [{"type": "Breakfast", "name": "Meal name", "desc": "Short description with rough portions", "macros": "~600 cal, 45g protein"}]}
+  ],
+  "grocery": [
+    {"category": "Protein", "items": ["chicken breast 1.5kg", "eggs x12"]}
+  ]
+}
+
+Rules: exactly 7 days, ${meals} meals per day each, daily totals close to the targets, simple realistic meals, respect all restrictions and avoid hated foods. Grocery categories: Protein, Carbs, Fruit & Veg, Dairy, Pantry.`;
+
+  try {
+    const response = await fetch("/.netlify/functions/generate-plan", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ prompt })
+    });
+
+    if(!response.ok) throw new Error("Function returned " + response.status);
+
+    const data = await response.json();
+    const text = data.text;
+    const clean = text.replace(/```json|```/g, "").trim();
+    const plan = JSON.parse(clean);
+
+    renderPlan(plan, targets, goal, w, t);
+  } catch(err){
+    console.error("Plan generation failed:", err);
+    clearInterval(loadInterval);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('formview').style.display = 'block';
+    document.getElementById('errorbox').style.display = 'block';
+    document.getElementById('errormsg').textContent = "We couldn't generate your plan. Please check your connection and try again.";
+  }
+}
+
+function renderPlan(plan, targets, goal, w, t){
+  clearInterval(loadInterval);
+  document.getElementById('loading').style.display = 'none';
+
+  document.getElementById('planSummary').textContent = plan.summary || `Your personalised ${goal} plan: ${w}kg → ${t}kg.`;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="val">${targets.cals}</div><div class="lbl">Calories / day</div></div>
+    <div class="stat-card"><div class="val">${targets.protein}g</div><div class="lbl">Protein</div></div>
+    <div class="stat-card"><div class="val">${targets.carbs}g</div><div class="lbl">Carbs</div></div>
+    <div class="stat-card"><div class="val">${targets.fats}g</div><div class="lbl">Fats</div></div>
+  `;
+
+  document.getElementById('hydration').textContent = '💧 ' + (plan.hydration || 'Aim for 2.5-3.5L of water per day.');
+
+  document.getElementById('daysContainer').innerHTML = (plan.days || []).map(d => `
+    <div class="day-card">
+      <div class="day-title">${esc(d.day)}</div>
+      ${(d.meals || []).map(m => `
+        <div class="meal">
+          <div class="meal-type">${esc(m.type)}</div>
+          <div class="meal-name">${esc(m.name)}</div>
+          <div class="meal-desc">${esc(m.desc)}</div>
+          <div class="meal-macros">${esc(m.macros || '')}</div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  document.getElementById('groceryContainer').innerHTML = (plan.grocery || []).map(g => `
+    <div class="gro-cat">${esc(g.category)}</div>
+    <div class="gro-items">${(g.items || []).map(esc).join(' · ')}</div>
+  `).join('');
+
+  document.getElementById('results').style.display = 'block';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function esc(s){
+  return String(s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+}
+
+function resetForm(){
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('formview').style.display = 'block';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+</script>
+</body>
+</html>
