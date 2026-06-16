@@ -317,8 +317,13 @@ Rules: exactly 7 days, ${meals} meals per day each, daily totals close to the ta
 
     const data = await response.json();
     const text = data.text;
-    const clean = text.replace(/```json|```/g, "").trim();
-    const plan = JSON.parse(clean);
+    // Strip markdown fences and any leading/trailing whitespace
+    const clean = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    // Find the first { and last } to extract just the JSON object
+    const start = clean.indexOf("{");
+    const end = clean.lastIndexOf("}");
+    const jsonStr = clean.slice(start, end + 1);
+    const plan = JSON.parse(jsonStr);
 
     renderPlan(plan, targets, goal, w, t);
   } catch(err){
