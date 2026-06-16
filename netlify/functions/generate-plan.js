@@ -2,7 +2,6 @@
 // This runs on Netlify's servers, keeping your API key secret.
 
 exports.handler = async (event) => {
-  // Only allow POST requests
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
@@ -10,7 +9,7 @@ exports.handler = async (event) => {
   try {
     const { prompt } = JSON.parse(event.body);
 
-    if (!prompt || typeof prompt !== "string" || prompt.length > 5000) {
+    if (!prompt || typeof prompt !== "string" || prompt.length > 8000) {
       return { statusCode: 400, body: JSON.stringify({ error: "Invalid request" }) };
     }
 
@@ -22,21 +21,23 @@ exports.handler = async (event) => {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 4000,
         messages: [{ role: "user", content: prompt }]
       })
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errText = await response.text();
-      console.error("Anthropic API error:", errText);
-      return { statusCode: 502, body: JSON.stringify({ error: "AI generation failed" }) };
+      console.error("Anthropic API error:", response.status, responseText);
+      return {
+        statusCode: 502,
+        body: JSON.stringify({ error: "AI generation failed", detail: responseText })
+      };
     }
 
-    const data = await response.json();
-
-    // Extract just the text from Claude's response
+    const data = JSON.parse(responseText);
     const text = data.content
       .filter((block) => block.type === "text")
       .map((block) => block.text)
@@ -44,11 +45,18 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      },
       body: JSON.stringify({ text })
     };
+
   } catch (err) {
     console.error("Function error:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: "Server error" }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Server error", detail: err.message })
+    };
   }
 };
