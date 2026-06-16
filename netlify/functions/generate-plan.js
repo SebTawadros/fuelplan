@@ -13,6 +13,9 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: "Invalid request" }) };
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -20,12 +23,15 @@ exports.handler = async (event) => {
         "x-api-key": process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01"
       },
+      signal: controller.signal,
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4000,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2000,
         messages: [{ role: "user", content: prompt }]
       })
     });
+
+    clearTimeout(timeout);
 
     const responseText = await response.text();
 
@@ -53,7 +59,7 @@ exports.handler = async (event) => {
     };
 
   } catch (err) {
-    console.error("Function error:", err);
+    console.error("Function error:", err.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Server error", detail: err.message })
