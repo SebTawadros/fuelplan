@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LiftBoard</title>
+<meta name="description" content="Pick a gym split, log your lifts and battle your mates on a pound-for-pound leaderboard.">
+<meta name="theme-color" content="#0b0d10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LiftBoard">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
+<style>
+:root{
+  --bg:#0b0d10; --bg2:#12151a; --card:#161a20; --card2:#1d222a; --line:#262c35;
+  --text:#f2f4f7; --muted:#8b95a3; --dim:#5d6672;
+  --lime:#c6ff3d; --lime2:#a8e01f; --orange:#ff7a2f; --red:#ff4d5e; --blue:#4da3ff; --gold:#ffcf3d; --purple:#b17dff;
+  --r:18px; --nav:74px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.45}
+body{min-height:100vh;padding-bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 8px)}
+body.noauth{padding-bottom:0}
+a{color:inherit;text-decoration:none}
+input,textarea,select,button{font:inherit;color:inherit}
+.hidden{display:none!important}
+h1,h2,.display{font-family:'Bebas Neue',Inter,sans-serif;letter-spacing:.5px;font-weight:400}
+h1{font-size:34px;line-height:1}
+h2{font-size:26px;line-height:1.05;margin-bottom:6px}
+h3{font-size:16px;font-weight:700}
+.muted{color:var(--muted)} .dim{color:var(--dim)} .lime{color:var(--lime)} .red{color:var(--red)} .gold{color:var(--gold)} .orange{color:var(--orange)}
+.small{font-size:13px} .tiny{font-size:11.5px}
+.row{display:flex;align-items:center;gap:10px} .col{display:flex;flex-direction:column;gap:10px}
+.between{justify-content:space-between} .wrap{flex-wrap:wrap} .grow{flex:1;min-width:0}
+.center{text-align:center}
+.mt{margin-top:14px} .mt2{margin-top:24px} .mb{margin-bottom:14px}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:rgba(11,13,16,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.logo{font-family:'Bebas Neue';font-size:28px;letter-spacing:1px;line-height:1}
+.logo b{color:var(--lime);font-weight:400}
+.iconbtn{position:relative;width:42px;height:42px;border-radius:14px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;font-size:19px;cursor:pointer;transition:transform .15s}
+.iconbtn:active{transform:scale(.9)}
+.dot{position:absolute;top:-5px;right:-5px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--red);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--bg)}
+.ring{animation:ring .9s ease}
+@keyframes ring{0%,100%{transform:rotate(0)}15%{transform:rotate(18deg)}30%{transform:rotate(-16deg)}45%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}75%{transform:rotate(4deg)}}
+
+main{max-width:640px;margin:0 auto;padding:16px}
+.view-in{animation:viewIn .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes viewIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* bottom nav */
+nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:40;height:calc(var(--nav) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:rgba(14,16,20,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line)}
+nav.bottom a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--muted);font-weight:600;position:relative;transition:color .2s}
+nav.bottom a .ic{font-size:22px;transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+nav.bottom a.on{color:var(--lime)} nav.bottom a.on .ic{transform:translateY(-3px) scale(1.15)}
+nav.bottom a.on::after{content:'';position:absolute;top:0;width:28px;height:3px;border-radius:0 0 4px 4px;background:var(--lime)}
+nav.bottom .dot{top:6px;right:calc(50% - 22px)}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;position:relative}
+.card.hl{background:linear-gradient(135deg,#1f2a10,#161a20 60%);border-color:#3b4d17}
+.card.warn{background:linear-gradient(135deg,#2a1414,#161a20 60%);border-color:#4d1f24}
+.card.gold{background:linear-gradient(135deg,#2a2410,#161a20 60%);border-color:#4d4317}
+.card.click{cursor:pointer;transition:transform .15s,border-color .2s}
+.card.click:active{transform:scale(.985)} .card.click:hover{border-color:#36404c}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;background:var(--card2);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pill.lime{color:var(--bg);background:var(--lime);border-color:var(--lime)}
+.pill.red{color:#fff;background:var(--red);border-color:var(--red)}
+.pill.gold{color:#1a1400;background:var(--gold);border-color:var(--gold)}
+.sec-title{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 10px}
+.sec-title h2{margin:0}
+.help{font-size:13px;color:var(--muted);margin:-2px 2px 14px}
+
+/* buttons */
+.bwrap{display:flex;flex-direction:column;gap:5px;min-width:0}
+.bwrap.inline{display:inline-flex}
+.tip{font-size:11.5px;color:var(--dim);line-height:1.35;padding:0 2px}
+body.notips .tip{display:none}
+.btn{position:relative;overflow:hidden;border:none;cursor:pointer;border-radius:14px;padding:13px 18px;font-weight:700;font-size:15px;background:var(--card2);color:var(--text);border:1px solid var(--line);transition:transform .12s,filter .2s,background .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;user-select:none}
+.btn:active{transform:scale(.95)}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn.primary{background:var(--lime);color:#0b0d10;border-color:var(--lime);box-shadow:0 6px 24px -8px rgba(198,255,61,.55)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{background:transparent;color:var(--red);border-color:#4d1f24}
+.btn.ghost{background:transparent}
+.btn.big{padding:17px 20px;font-size:17px;border-radius:16px;width:100%}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:11px}
+.btn.full{width:100%}
+.ripple{position:absolute;border-radius:50%;transform:scale(0);background:rgba(255,255,255,.45);animation:rip .6s linear;pointer-events:none}
+.btn.primary .ripple{background:rgba(0,0,0,.25)}
+@keyframes rip{to{transform:scale(4);opacity:0}}
+.btn.pop{animation:popb .4s cubic-bezier(.3,1.8,.5,1)}
+@keyframes popb{40%{transform:scale(1.12)}}
+
+/* forms */
+label.f{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:12px 0 6px}
+.inp{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;transition:border-color .2s,box-shadow .2s}
+.inp:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(198,255,61,.15)}
+textarea.inp{min-height:72px;resize:vertical}
+.seg{display:flex;background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:4px;gap:4px}
+.seg button{flex:1;border:none;background:none;padding:9px 6px;border-radius:10px;font-weight:700;font-size:13.5px;color:var(--muted);cursor:pointer;transition:background .2s,color .2s}
+.seg button.on{background:var(--card2);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.avatars{display:flex;flex-wrap:wrap;gap:8px}
+.avatars button{width:46px;height:46px;font-size:24px;border-radius:13px;background:var(--bg2);border:2px solid var(--line);cursor:pointer;transition:transform .15s}
+.avatars button.on{border-color:var(--lime);transform:scale(1.08);background:#1f2a10}
+
+/* avatar */
+.av{width:42px;height:42px;border-radius:14px;background:var(--card2);border:1px solid var(--line);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+.av.lg{width:84px;height:84px;font-size:46px;border-radius:26px}
+.av.sm{width:32px;height:32px;font-size:17px;border-radius:10px}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stats.three{grid-template-columns:repeat(3,1fr)}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center}
+.stat .v{font-family:'Bebas Neue';font-size:28px;line-height:1}
+.stat .l{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+
+/* leaderboard */
+.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:8px;margin:8px 0 18px}
+.pod{text-align:center;cursor:pointer}
+.pod .av{margin:0 auto 6px;width:54px;height:54px;font-size:30px;border-radius:18px}
+.pod.p1 .av{width:66px;height:66px;font-size:38px;border-color:var(--gold);box-shadow:0 0 30px -6px var(--gold)}
+.pod .name{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .gain{font-family:'Bebas Neue';font-size:22px;color:var(--lime)}
+.pod .gain.neg{color:var(--red)}
+.pod .block{border-radius:14px 14px 4px 4px;background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);display:grid;place-items:center;font-family:'Bebas Neue';font-size:34px;color:var(--muted);transform-origin:bottom;animation:grow .7s cubic-bezier(.2,1.3,.4,1) both}
+.pod.p1 .block{height:118px;color:var(--gold);border-color:#4d4317;animation-delay:.25s}
+.pod.p2 .block{height:88px;animation-delay:.1s} .pod.p3 .block{height:66px;animation-delay:.4s}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.lrow{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;background:var(--card);border:1px solid var(--line);margin-bottom:8px;cursor:pointer;animation:viewIn .4s both}
+.lrow.me{border-color:var(--lime);background:#171f0d}
+.lrow .rk{width:26px;text-align:center;font-family:'Bebas Neue';font-size:22px;color:var(--muted)}
+.lrow .g{font-family:'Bebas Neue';font-size:24px;text-align:right;min-width:64px}
+.fame{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fame .card{margin:0;padding:13px}
+.fame .ttl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.fame .who{display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:700}
+.fame .val{font-family:'Bebas Neue';font-size:22px;margin-top:2px}
+
+/* feed */
+.wk-ex{display:flex;justify-content:space-between;font-size:13.5px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.wk-ex:last-child{border:none}
+.rx{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.rx button{border:1px solid var(--line);background:var(--bg2);border-radius:99px;padding:5px 10px;font-size:14px;cursor:pointer;transition:transform .15s}
+.rx button.on{border-color:var(--lime);background:#1f2a10}
+.rx button:active{transform:scale(1.25)}
+.rx button.pop{animation:popb .4s cubic-bezier(.3,1.8,.5,1)}
+
+/* logger */
+.ex-card .sets{width:100%;border-collapse:collapse;margin-top:8px}
+.sets th{font-size:11px;color:var(--dim);font-weight:700;text-transform:uppercase;text-align:left;padding:4px}
+.sets td{padding:4px}
+.sets .num{width:30px;text-align:center;font-weight:700;color:var(--muted)}
+.sets input{width:100%;text-align:center;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 4px;font-weight:700;font-size:16px;outline:none}
+.sets input:focus{border-color:var(--lime)}
+.sets tr.done input{background:#1a240c;border-color:#3b4d17}
+.tick{width:46px;height:42px;border-radius:12px;border:2px solid var(--line);background:var(--bg2);font-size:18px;cursor:pointer;transition:all .2s cubic-bezier(.3,1.6,.5,1);color:transparent}
+.tick.on{background:var(--lime);border-color:var(--lime);color:#0b0d10;transform:scale(1.05)}
+.xbtn{border:none;background:none;color:var(--dim);font-size:18px;cursor:pointer;padding:4px 8px}
+.resttimer{white-space:nowrap;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 12px);z-index:45;background:var(--lime);color:#0b0d10;font-weight:800;border-radius:99px;padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px -6px rgba(198,255,61,.6);animation:viewIn .3s}
+.resttimer button{border:none;background:rgba(0,0,0,.15);border-radius:99px;padding:5px 10px;font-weight:800;cursor:pointer}
+
+/* toasts */
+#toasts{position:fixed;top:calc(64px + env(safe-area-inset-top));left:0;right:0;z-index:100;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 12px}
+.toast{pointer-events:auto;max-width:440px;width:100%;background:#1f252e;border:1px solid #333c48;border-radius:16px;padding:12px 14px;box-shadow:0 18px 40px -10px rgba(0,0,0,.7);display:flex;gap:10px;align-items:flex-start;animation:tin .45s cubic-bezier(.2,1.4,.4,1);cursor:pointer}
+.toast.out{animation:tout .3s forwards}
+.toast.pr{border-color:var(--lime)} .toast.loss,.toast.last{border-color:var(--red)} .toast.leader{border-color:var(--gold)}
+@keyframes tin{from{opacity:0;transform:translateY(-30px) scale(.9)}}
+@keyframes tout{to{opacity:0;transform:translateY(-20px)}}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+.modal{width:100%;max-width:560px;max-height:90vh;overflow:auto;background:var(--bg2);border:1px solid var(--line);border-radius:24px 24px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));animation:up .35s cubic-bezier(.2,1,.3,1)}
+@media(min-width:600px){.modal-bg{align-items:center}.modal{border-radius:24px}}
+@keyframes fade{from{opacity:0}} @keyframes up{from{transform:translateY(60px);opacity:0}}
+.shake{animation:shake .6s}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
+
+/* badges */
+.badges{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.bdg{text-align:center;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:10px 4px;cursor:pointer}
+.bdg .e{font-size:28px;display:block;transition:transform .2s}
+.bdg .n{font-size:10.5px;font-weight:700;margin-top:4px;line-height:1.2}
+.bdg.locked .e{filter:grayscale(1) opacity(.3)} .bdg.locked .n{color:var(--dim)}
+.bdg.new .e{animation:badgepop 1s cubic-bezier(.3,1.8,.5,1)}
+@keyframes badgepop{0%{transform:scale(0) rotate(-40deg)}60%{transform:scale(1.4) rotate(10deg)}100%{transform:scale(1)}}
+.bigbadge{font-size:64px;display:inline-block;animation:badgepop 1s cubic-bezier(.3,1.8,.5,1) both}
+
+/* chat */
+.bubbles{display:flex;flex-direction:column;gap:6px;padding-bottom:80px}
+.bub{max-width:78%;padding:9px 13px;border-radius:18px;background:var(--card2);align-self:flex-start;word-wrap:break-word;animation:viewIn .25s}
+.bub.mine{align-self:flex-end;background:var(--lime);color:#0b0d10}
+.bub .t{font-size:10px;opacity:.6;margin-top:2px}
+.composer{position:fixed;left:0;right:0;bottom:calc(var(--nav) + env(safe-area-inset-bottom));z-index:35;padding:10px 12px;background:rgba(11,13,16,.95);border-top:1px solid var(--line)}
+.composer .in{max-width:640px;margin:0 auto;display:flex;gap:8px}
+
+.progress{height:9px;border-radius:9px;background:var(--bg2);overflow:hidden;border:1px solid var(--line)}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--lime2),var(--lime));border-radius:9px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.notif{display:flex;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--card);margin-bottom:8px;cursor:pointer;animation:viewIn .3s both}
+.notif.unread{border-color:#3b4d17;background:#151b0e}
+.notif .ic{font-size:22px;width:28px;text-align:center}
+.skel{height:80px;border-radius:var(--r);background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);background-size:200% 100%;animation:sk 1.2s infinite;margin-bottom:12px}
+@keyframes sk{to{background-position:-200% 0}}
+.empty{text-align:center;padding:30px 10px;color:var(--muted)}
+.empty .e{font-size:44px;display:block;margin-bottom:6px}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(198,255,61,.5)}50%{box-shadow:0 0 0 10px rgba(198,255,61,0)}}
+
+/* auth */
+.auth{min-height:100vh;display:flex;flex-direction:column;justify-content:center;max-width:420px;margin:0 auto;padding:30px 20px}
+.hero-logo{font-family:'Bebas Neue';font-size:clamp(44px,15vw,64px);line-height:.9;letter-spacing:1px}
+.hero-logo b{color:var(--lime);font-weight:400}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0 22px}
+.feat div{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:10px;font-size:12.5px;color:var(--muted)}
+.feat b{display:block;color:var(--text);font-size:13.5px}
+svg.chart{width:100%;height:170px;display:block}
+.chip-list{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chip-list::-webkit-scrollbar{display:none}
+.chip{border:1px solid var(--line);background:var(--bg2);border-radius:99px;padding:7px 12px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;color:var(--muted)}
+.chip.on{background:var(--lime);color:#0b0d10;border-color:var(--lime)}
+.day{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;background:var(--bg2)}
+.exrow{display:grid;grid-template-columns:1fr 54px 64px 30px;gap:6px;margin-top:6px}
+.exrow .inp{padding:9px 10px}
+</style>
+</head>
+<body class="noauth">
+<header class="top hidden" id="top">
+  <a href="#/" class="logo">LIFT<b>BOARD</b></a>
+  <div class="row">
+    <a href="#/social/chats" class="iconbtn" id="chatBtn" title="Messages" aria-label="Messages">💬<span class="dot hidden" id="msgDot"></span></a>
+    <a href="#/notifications" class="iconbtn" id="bellBtn" title="Notifications" aria-label="Notifications">🔔<span class="dot hidden" id="bellDot"></span></a>
+  </div>
+</header>
+<main id="app"><div class="skel"></div><div class="skel"></div></main>
+<nav class="bottom hidden" id="nav">
+  <a href="#/" data-nav="home"><span class="ic">🏠</span>Home</a>
+  <a href="#/train" data-nav="train"><span class="ic">🏋️</span>Train</a>
+  <a href="#/leaderboard" data-nav="leaderboard"><span class="ic">🏆</span>Board</a>
+  <a href="#/social" data-nav="social"><span class="ic">👥</span>Social<span class="dot hidden" id="navMsgDot"></span></a>
+  <a href="#/profile" data-nav="profile"><span class="ic">🙋</span>Me</a>
+</nav>
+<div id="toasts"></div>
+<div id="restSlot"></div>
+
+<script>
+'use strict';
+/* ================== CONFIG ================== */
+const SB_URL = 'https://zmchhnjwgyvyjixuwpuq.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptY2hobmp3Z3l2eWppeHV3cHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5MDcwMTQsImV4cCI6MjEwODQ4MzAxNH0.oQvxwj0CSIcTBaR5mxbNIINdY1vYgTkiVVIJ7KIFdHs';
+const VAPID_PUBLIC = 'BGZFD6yElbGH-surUZb7hsJyd9qsQWI-vdCab8YInXFqyVSAkTc_qsUzw6al_VNb4V74KrLE5NNhD3P-9r3ceIs';
+const EMAIL_DOMAIN = 'users.liftboard.app';
+
+const sb = supabase.createClient(SB_URL, SB_ANON, { auth: { persistSession: true, autoRefreshToken: true } });
+
+const AVATARS = ['💪','🦍','🐺','🦁','🐻','🔥','⚡','🏋️','🥇','🦾','🐉','🚀','🐂','🦈','🥷','👹','🤖','🐸','🦅','👑'];
+const EXERCISES = ['Bench Press','Incline Bench Press','Incline Dumbbell Press','Dumbbell Bench Press','Close Grip Bench Press','Cable Fly','Dips','Push Up',
+  'Overhead Press','Dumbbell Shoulder Press','Lateral Raise','Rear Delt Fly','Face Pull','Shrug','Arnold Press',
+  'Squat','Front Squat','Leg Press','Hack Squat','Bulgarian Split Squat','Walking Lunge','Leg Extension','Leg Curl','Romanian Deadlift','Stiff Leg Deadlift','Hip Thrust','Glute Bridge','Hip Abduction','Calf Raise',
+  'Deadlift','Sumo Deadlift','Barbell Row','Dumbbell Row','Seated Cable Row','Lat Pulldown','Pull Up','Chin Up','Weighted Pull Up','T-Bar Row','Dumbbell Pullover',
+  'Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Concentration Curl','Cable Curl','Tricep Pushdown','Skull Crusher','Overhead Tricep Extension',
+  'Plank','Hanging Leg Raise','Cable Crunch','Ab Wheel','Cable Kickback'];
+const BADGES = {
+  first_workout:['🎬','First Rep','Finish your first workout'],
+  workouts_5:['📅','Regular','Finish 5 workouts'],
+  workouts_10:['💯','Committed','Finish 10 workouts'],
+  workouts_25:['🐀','Gym Rat','Finish 25 workouts'],
+  workouts_50:['⛓️','Iron Addict','Finish 50 workouts'],
+  workouts_100:['🏛️','Centurion','Finish 100 workouts'],
+  first_pr:['🎯','PR Hunter','Hit your first personal record'],
+  prs_10:['🚀','PR Machine','Hit 10 personal records'],
+  prs_25:['💥','Record Breaker','Hit 25 personal records'],
+  club_100:['💪','100kg Club','Lift 100kg on any exercise'],
+  club_140:['🦍','140kg Club','Lift 140kg on any exercise'],
+  club_180:['🐘','180kg Club','Lift 180kg on any exercise'],
+  volume_5k:['🏗️','5 Tonne Day','Move 5,000kg in one session'],
+  volume_10k:['🚛','10 Tonne Day','Move 10,000kg in one session'],
+  week_3:['🔥','On Fire','Train 3 different days in a week'],
+  week_5:['😤','Beast Mode','Train 5 different days in a week'],
+  goal_crusher:['🏁','Goal Crusher','Hit a goal you set yourself'],
+  king:['👑','King of the Gym','Reach #1 on the leaderboard'],
+  hype_man:['📣','Hype Man','React to 10 workouts'],
+  comeback:['🔄','Comeback Kid','Hit a PR right after going backwards'],
+};
+const KIND_ICON = {pr:'🔥',loss:'📉',leader:'👑',last:'🐢',badge:'🏅',goal:'🎯',message:'💬',comment:'🗨️',reaction:'👊',nudge:'👊',workout:'🏋️',lazy:'😴',weekly:'🏆',recap:'🤖',test:'🔔'};
+const REACTIONS = ['🔥','💪','👑','😂','🐢'];
+
+/* ================== STATE ================== */
+const S = {
+  session: null, me: null, profiles: {}, splits: [], gyms: [],
+  unread: 0, unreadMsgs: 0, myLifts: null, myWorkouts: null,
+  active: lsGet('lb_active', null), draft: null, welcome: false,
+  board: { period: lsGet('lb_period', 'week'), scope: 'all' },
+  feedTab: 'feed', splitTab: 'ready', pushOn: false, swReg: null, channel: null,
+};
+const prefs = Object.assign({ tips: true, sound: true, rest: 90 }, lsGet('lb_prefs', {}));
+
+/* ================== UTILS ================== */
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } }
+function lsSet(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const kg = n => (Math.round((+n || 0) * 10) / 10).toLocaleString() + 'kg';
+const pct = n => n == null ? '—' : (n > 0 ? '+' : '') + (+n).toFixed(1) + '%';
+const localDate = (d = new Date()) => d.toLocaleDateString('en-CA');
+const safeLink = l => (typeof l === 'string' && l.startsWith('#/')) ? l : '#/';
+const prof = id => S.profiles[id] || { username: 'someone', avatar: '❔', id };
+function ago(t) {
+  const s = (Date.now() - new Date(t).getTime()) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 86400 * 7) return Math.floor(s / 86400) + 'd ago';
+  return new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+const daysSince = t => t ? Math.floor((Date.now() - new Date(t).getTime()) / 864e5) : null;
+const e1rm = (w, r) => r > 0 ? w * (1 + Math.min(r, 30) / 30) : 0;
+
+// Button with an explanation under it — every important button in the app uses this.
+function btn(label, act, tip, cls = '', attrs = '') {
+  return `<div class="bwrap"><button class="btn ${cls}" data-act="${act}" ${attrs}>${label}</button>${tip ? `<div class="tip">${tip}</div>` : ''}</div>`;
+}
+function avatar(p, size = '') { return `<div class="av ${size}">${esc(p?.avatar || '💪')}</div>`; }
+function userLink(id) { const p = prof(id); return `<a href="#/user/${id}" class="row" style="gap:8px">${avatar(p, 'sm')}<b>${esc(p.username)}</b></a>`; }
+
+function toast(title, body = '', kind = '', link = null, ms = 4200) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.innerHTML = `<div style="font-size:22px">${KIND_ICON[kind] || '✨'}</div><div class="grow"><b>${esc(title)}</b>${body ? `<div class="small muted">${esc(body)}</div>` : ''}</div>`;
+  el.onclick = () => { if (link) location.hash = safeLink(link); el.remove(); };
+  $('#toasts').prepend(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, ms);
+}
+function modal(html, opts = {}) {
+  closeModal();
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg'; bg.id = 'modal';
+  bg.innerHTML = `<div class="modal ${opts.cls || ''}">${html}</div>`;
+  bg.addEventListener('click', e => { if (e.target === bg && !opts.locked) closeModal(); });
+  document.body.appendChild(bg);
+  return bg.firstElementChild;
+}
+function closeModal() { $('#modal')?.remove(); }
+function confirmBox(title, text, okLabel = 'Yes') {
+  return new Promise(res => {
+    const m = modal(`<h2>${esc(title)}</h2><p class="muted mb">${esc(text)}</p>
+      <div class="row"><button class="btn grow" id="cNo">Cancel</button><button class="btn primary grow" id="cYes">${esc(okLabel)}</button></div>`);
+    $('#cNo', m).onclick = () => { closeModal(); res(false); };
+    $('#cYes', m).onclick = () => { closeModal(); res(true); };
+  });
+}
+function boom(power = 1) {
+  if (!window.confetti) return;
+  const c = ['#c6ff3d', '#ffcf3d', '#ff7a2f', '#4da3ff', '#ffffff'];
+  confetti({ particleCount: 120 * power, spread: 90, origin: { y: .65 }, colors: c, zIndex: 200 });
+  setTimeout(() => confetti({ particleCount: 60 * power, angle: 60, spread: 70, origin: { x: 0, y: .7 }, colors: c, zIndex: 200 }), 250);
+  setTimeout(() => confetti({ particleCount: 60 * power, angle: 120, spread: 70, origin: { x: 1, y: .7 }, colors: c, zIndex: 200 }), 400);
+}
+let audioCtx;
+function sound(kind) {
+  if (!prefs.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const seqs = { pr: [523, 659, 784, 1047], leader: [392, 523, 659, 784, 1047], loss: [392, 330, 262, 196], last: [330, 262, 196],
+      message: [880, 1175], badge: [659, 880, 1319], rest: [880, 880, 1320], default: [740, 988] };
+    const notes = seqs[kind] || seqs.default;
+    const sad = kind === 'loss' || kind === 'last';
+    notes.forEach((f, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = sad ? 'sawtooth' : 'triangle'; o.frequency.value = f;
+      const t = audioCtx.currentTime + i * (sad ? .22 : .11);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(sad ? .08 : .15, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + (sad ? .3 : .25));
+      o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + .35);
+    });
+  } catch {}
+}
+function buzz(p = [60]) { try { navigator.vibrate?.(p); } catch {} }
+function countUp(el, to, dec = 0, suffix = '') {
+  const start = performance.now(), dur = 900;
+  const step = now => {
+    const k = Math.min(1, (now - start) / dur), v = to * (1 - Math.pow(1 - k, 3));
+    el.textContent = v.toFixed(dec) + suffix;
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function weekStart(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.getTime(); }
+function weekStreak(dates) {
+  const weeks = new Set(dates.map(d => weekStart(d + 'T12:00:00')));
+  let w = weekStart(new Date()), n = 0;
+  if (!weeks.has(w)) w -= 7 * 864e5;
+  while (weeks.has(w)) { n++; w -= 7 * 864e5; }
+  return n;
+}
+
+/* ================== DATA ================== */
+async function q(promise) {
+  const { data, error } = await promise;
+  if (error) { console.error(error); throw new Error(error.message); }
+  return data;
+}
+async function loadProfiles() {
+  const rows = await q(sb.from('profiles').select('*'));
+  S.profiles = Object.fromEntries(rows.map(r => [r.id, r]));
+  if (S.session) S.me = S.profiles[S.session.user.id] || S.me;
+}
+async function loadSplits() { S.splits = await q(sb.from('splits').select('*').order('created_at')); }
+async function loadGyms() { S.gyms = await q(sb.from('gyms').select('*').order('created_at')); }
+async function ensureMyLifts(force) {
+  if (S.myLifts && !force) return S.myLifts;
+  S.myLifts = await q(sb.from('lifts').select('exercise,weight,reps,completed,workout_id,created_at').eq('user_id', S.me.id).order('created_at', { ascending: false }).limit(3000));
+  return S.myLifts;
+}
+async function ensureMyWorkouts(force) {
+  if (S.myWorkouts && !force) return S.myWorkouts;
+  S.myWorkouts = await q(sb.from('workouts').select('id,split_id,day_name,performed_on,created_at,total_volume').eq('user_id', S.me.id).eq('finished', true).order('created_at', { ascending: false }));
+  return S.myWorkouts;
+}
+function lastFor(name) {
+  const n = name.trim().toLowerCase();
+  const first = (S.myLifts || []).find(l => l.exercise.trim().toLowerCase() === n);
+  if (!first) return null;
+  const sets = S.myLifts.filter(l => l.workout_id === first.workout_id && l.exercise.trim().toLowerCase() === n).reverse();
+  const best = S.myLifts.filter(l => l.exercise.trim().toLowerCase() === n && l.completed).reduce((m, l) => Math.max(m, +l.weight), 0);
+  return { sets, best };
+}
+const leaderboard = (since, gym) => q(sb.rpc('leaderboard', { p_since: since, p_gym: gym }));
+const weekAgoISO = () => new Date(Date.now() - 7 * 864e5).toISOString();
+
+/* ================== NOTIFICATIONS ================== */
+async function refreshCounts() {
+  if (!S.me) return;
+  const [{ count: n }, { count: m }] = await Promise.all([
+    sb.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', S.me.id).eq('read', false),
+    sb.from('messages').select('id', { count: 'exact', head: true }).eq('recipient_id', S.me.id).is('read_at', null),
+  ]);
+  S.unread = n || 0; S.unreadMsgs = m || 0; paintCounts();
+}
+function paintCounts() {
+  const set = (id, n) => { const d = $(id); if (!d) return; d.textContent = n > 99 ? '99+' : n; d.classList.toggle('hidden', !n); };
+  set('#bellDot', S.unread); set('#msgDot', S.unreadMsgs); set('#navMsgDot', S.unreadMsgs);
+  document.title = (S.unread ? `(${S.unread}) ` : '') + 'LiftBoard';
+  try { S.unread ? navigator.setAppBadge?.(S.unread) : navigator.clearAppBadge?.(); } catch {}
+}
+function onNotification(n) {
+  S.unread++; paintCounts();
+  const bell = $('#bellBtn'); bell?.classList.remove('ring'); void bell?.offsetWidth; bell?.classList.add('ring');
+  const onThisChat = n.kind === 'message' && location.hash === n.link;
+  if (!onThisChat) {
+    toast(n.title, n.body, n.kind, n.link);
+    sound(n.kind);
+    buzz(n.kind === 'loss' || n.kind === 'last' ? [200, 80, 200] : [60, 40, 60]);
+  }
+  if (n.kind === 'pr' || n.kind === 'leader') { if (!document.hidden) window.confetti?.({ particleCount: 50, spread: 60, origin: { y: .1 }, zIndex: 200 }); }
+  // If the tab is in the background and push isn't set up, show a system notification from the page.
+  if (document.hidden && !S.pushOn && window.Notification?.permission === 'granted' && S.swReg) {
+    S.swReg.showNotification(n.title, { body: n.body, icon: 'icon-192.png', tag: 'n' + n.id, data: { link: n.link } });
+  }
+  if (location.hash === '#/notifications') render();
+}
+function subscribeRealtime() {
+  if (S.channel) sb.removeChannel(S.channel);
+  S.channel = sb.channel('me-' + S.me.id)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${S.me.id}` }, p => onNotification(p.new))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${S.me.id}` }, p => onMessage(p.new))
+    .subscribe();
+}
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    S.swReg = await navigator.serviceWorker.register('sw.js');
+    const sub = await S.swReg.pushManager?.getSubscription();
+    S.pushOn = !!sub && window.Notification?.permission === 'granted';
+    navigator.serviceWorker.addEventListener('message', e => { if (e.data?.link) location.hash = safeLink(e.data.link); });
+  } catch (e) { console.warn('SW failed', e); }
+}
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+function b64ToU8(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+async function enablePush() {
+  if (isIOS() && !isStandalone()) {
+    modal(`<h2>📲 One quick step on iPhone</h2>
+      <p class="muted">Apple only allows notifications for apps on your Home Screen.</p>
+      <ol class="mt" style="padding-left:20px;line-height:1.9">
+        <li>Tap the <b>Share</b> button <span class="pill">⬆️</span> in Safari</li>
+        <li>Tap <b>Add to Home Screen</b></li>
+        <li>Open LiftBoard from your Home Screen</li>
+        <li>Come back here and tap <b>Turn on notifications</b></li>
+      </ol>
+      <button class="btn primary full mt" onclick="closeModal()">Got it</button>`);
+    return;
+  }
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) { toast('This browser can’t do notifications', 'Try Chrome, Edge, Firefox or Safari (iOS 16.4+).', 'loss'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { toast('Notifications blocked', 'Allow them in your browser/site settings, then try again.', 'loss'); return; }
+  try {
+    const reg = S.swReg || await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
+    const j = sub.toJSON();
+    await q(sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: S.me.id, p256dh: j.keys.p256dh, auth: j.keys.auth }));
+    S.pushOn = true;
+    toast('Notifications ON 🔔', 'You’ll get pinged even when the app is closed.', 'pr');
+    boom(.5);
+    await sb.rpc('test_push');
+    render();
+  } catch (e) { toast('Couldn’t turn on push', e.message, 'loss'); }
+}
+async function disablePush() {
+  try {
+    const sub = await S.swReg?.pushManager.getSubscription();
+    if (sub) { await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
+  } catch {}
+  S.pushOn = false;
+}
+function notifCard() {
+  if (S.pushOn) return '';
+  return `<div class="card hl pulse"><div class="row"><div style="font-size:34px">🔔</div><div class="grow"><h3>Turn on notifications</h3>
+    <div class="small muted">Get pinged when someone hits a PR, steals #1, goes backwards, messages or nudges you.</div></div></div>
+    <div class="mt">${btn('Turn on notifications', 'enablePush', 'Asks your phone/browser for permission, then sends you a test ping.', 'primary full')}</div></div>`;
+}
+
+/* ================== ROUTER ================== */
+const routes = [
+  [/^#?\/?$/, viewHome, 'home'],
+  [/^#\/train$/, viewTrain, 'train'],
+  [/^#\/log$/, viewLog, 'train'],
+  [/^#\/splits$/, viewSplits, 'train'],
+  [/^#\/split\/([\w-]+)$/, viewSplit, 'train'],
+  [/^#\/split-edit(?:\/([\w-]+))?$/, viewSplitEdit, 'train'],
+  [/^#\/leaderboard$/, viewBoard, 'leaderboard'],
+  [/^#\/social(?:\/(feed|people|chats))?$/, viewSocial, 'social'],
+  [/^#\/workout\/([\w-]+)$/, viewWorkout, 'social'],
+  [/^#\/chat\/([\w-]+)$/, viewChat, 'social'],
+  [/^#\/notifications$/, viewNotifs, ''],
+  [/^#\/profile$/, () => viewUser(S.me.id), 'profile'],
+  [/^#\/user\/([\w-]+)$/, viewUser, 'profile'],
+  [/^#\/gyms$/, viewGyms, 'profile'],
+  [/^#\/settings$/, viewSettings, 'profile'],
+];
+let renderSeq = 0;
+async function render() {
+  const seq = ++renderSeq;
+  const app = $('#app');
+  if (!S.session) { document.body.className = 'noauth' + (prefs.tips ? '' : ' notips'); $('#top').classList.add('hidden'); $('#nav').classList.add('hidden'); app.innerHTML = viewAuth(); return; }
+  document.body.className = prefs.tips ? '' : 'notips';
+  $('#top').classList.remove('hidden'); $('#nav').classList.remove('hidden');
+  const hash = location.hash || '#/';
+  let match = null, view = viewHome, tab = 'home';
+  for (const [re, fn, t] of routes) { const m = hash.match(re); if (m) { match = m; view = fn; tab = t; break; } }
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.nav === tab));
+  if (!app.innerHTML.trim() || app.dataset.hash !== hash) app.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+  try {
+    const html = await view(...(match ? match.slice(1) : []));
+    if (seq !== renderSeq) return;
+    const same = app.dataset.hash === hash;
+    app.dataset.hash = hash;
+    app.innerHTML = html;
+    if (!same) { app.classList.remove('view-in'); void app.offsetWidth; app.classList.add('view-in'); window.scrollTo(0, 0); }
+    after.forEach(f => f()); after = [];
+  } catch (e) {
+    if (seq !== renderSeq) return;
+    app.innerHTML = `<div class="empty"><span class="e">😵</span>Something went wrong.<div class="small mt">${esc(e.message)}</div>
+      <div class="mt">${btn('Try again', 'reload', 'Reloads this screen.', 'primary')}</div></div>`;
+  }
+}
+let after = [];
+window.addEventListener('hashchange', render);
+
+/* ================== ACTIONS (event delegation) ================== */
+const A = {};
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.btn'); if (!b) return;
+  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height);
+  const sp = document.createElement('span'); sp.className = 'ripple';
+  sp.style.cssText = `width:${s}px;height:${s}px;left:${e.clientX - r.left - s / 2}px;top:${e.clientY - r.top - s / 2}px`;
+  b.appendChild(sp); setTimeout(() => sp.remove(), 600);
+});
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const fn = A[el.dataset.act]; if (!fn) return;
+  e.preventDefault();
+  try { await fn(el, e); } catch (err) { console.error(err); toast('Oops', err.message, 'loss'); }
+});
+A.reload = () => render();
+A.enablePush = () => enablePush();
+A.go = el => { location.hash = el.dataset.to; };
+
+/* ================== AUTH ================== */
+let authMode = 'signup', pickedAvatar = AVATARS[Math.floor(Math.random() * 8)];
+function viewAuth() {
+  const su = authMode === 'signup';
+  return `<div class="auth view-in">
+    <div class="hero-logo">LIFT<b>BOARD</b></div>
+    <p class="muted" style="font-size:16px;margin-top:8px">Pick a split. Log your lifts. Beat your mates <b class="lime">pound for pound</b>.</p>
+    <div class="feat">
+      <div><b>🏆 Fair leaderboard</b>Ranked on how much YOU improve, not who’s biggest.</div>
+      <div><b>🔔 Live alerts</b>Know the second someone PRs, takes #1 or slips.</div>
+      <div><b>📋 Ready splits</b>PPL, Upper/Lower, 5×5… or build your own.</div>
+      <div><b>🏅 Badges & goals</b>Unlock rewards for showing up and lifting more.</div>
+    </div>
+    <div class="seg mb">
+      <button class="${su ? 'on' : ''}" data-act="authMode" data-m="signup">Sign up</button>
+      <button class="${su ? '' : 'on'}" data-act="authMode" data-m="login">Log in</button>
+    </div>
+    <form id="authForm" onsubmit="return false">
+      <label class="f">Username</label>
+      <input class="inp" id="aUser" autocomplete="username" placeholder="e.g. big_seb" maxlength="20" autocapitalize="off">
+      <label class="f">Password</label>
+      <input class="inp" id="aPass" type="password" autocomplete="${su ? 'new-password' : 'current-password'}" placeholder="${su ? 'At least 6 characters' : 'Your password'}">
+      ${su ? `<label class="f">Pick your avatar</label><div class="avatars">${AVATARS.map(a => `<button type="button" class="${a === pickedAvatar ? 'on' : ''}" data-act="pickAvatar" data-a="${a}">${a}</button>`).join('')}</div>` : ''}
+      <div class="mt2">${su ? btn('Create my account 🚀', 'signup', 'Free forever. No email needed — just remember your username and password.', 'primary big', 'type="submit"')
+                            : btn('Log in', 'login', 'Welcome back. Use the username and password you signed up with.', 'primary big', 'type="submit"')}</div>
+    </form>
+    <p class="tiny dim center mt2">Real people only. No bots. If there are 5 users, there are 5 users.</p>
+  </div>`;
+}
+A.authMode = el => { authMode = el.dataset.m; render(); };
+A.pickAvatar = el => { pickedAvatar = el.dataset.a; $$('.avatars button').forEach(b => b.classList.toggle('on', b === el)); };
+const emailFor = u => `${u.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
+A.signup = async el => {
+  const username = $('#aUser').value.trim(), password = $('#aPass').value;
+  if (!/^[A-Za-z0-9_.]{3,20}$/.test(username)) return toast('Username needs 3–20 letters, numbers, _ or .', '', 'loss');
+  if (password.length < 6) return toast('Password must be at least 6 characters', '', 'loss');
+  el.disabled = true; el.textContent = 'Creating…';
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/signup', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }, body: JSON.stringify({ username, password, avatar: pickedAvatar }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Sign up failed');
+    const { error } = await sb.auth.signInWithPassword({ email: emailFor(username), password });
+    if (error) throw error;
+    S.welcome = true; location.hash = '#/splits';
+    boom();
+  } catch (e) { toast('Sign up failed', e.message, 'loss'); el.disabled = false; el.textContent = 'Create my account 🚀'; }
+};
+A.login = async el => {
+  const username = $('#aUser').value.trim(), password = $('#aPass').value;
+  if (!username || !password) return toast('Enter your username and password', '', 'loss');
+  el.disabled = true; el.textContent = 'Logging in…';
+  const { error } = await sb.auth.signInWithPassword({ email: emailFor(username), password });
+  if (error) { toast('Login failed', 'Wrong username or password.', 'loss'); el.disabled = false; el.textContent = 'Log in'; $('.auth')?.classList.add('shake'); }
+};
+A.logout = async () => {
+  if (!await confirmBox('Log out?', 'You’ll stop getting notifications on this device.', 'Log out')) return;
+  await disablePush();
+  await sb.auth.signOut();
+};
+
+/* ================== HOME ================== */
+function nextDay(split, workouts) {
+  if (!split?.days?.length) return null;
+  const last = workouts.find(w => w.split_id === split.id);
+  if (!last) return 0;
+  const i = split.days.findIndex(d => d.name === last.day_name);
+  return (i + 1) % split.days.length;
+}
+async function viewHome() {
+  const [workouts, board, feed, recap] = await Promise.all([
+    ensureMyWorkouts(true),
+    leaderboard(null, null),
+    q(sb.from('workouts').select('id,user_id,day_name,total_volume,created_at').eq('finished', true).order('created_at', { ascending: false }).limit(6)),
+    sb.from('recaps').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle().then(r => r.data),
+  ]);
+  const me = S.me, split = S.splits.find(s => s.id === me.active_split_id);
+  const ranked = board.filter(r => r.gain_pct != null);
+  const myRow = board.find(r => r.user_id === me.id);
+  const rank = ranked.findIndex(r => r.user_id === me.id) + 1;
+  const weekDays = new Set(workouts.filter(w => new Date(w.performed_on + 'T12:00:00').getTime() >= weekStart(new Date())).map(w => w.performed_on)).size;
+  const streak = weekStreak(workouts.map(w => w.performed_on));
+  const nd = nextDay(split, workouts);
+  const day = split && nd != null ? split.days[nd] : null;
+  const lastDays = daysSince(workouts[0]?.created_at);
+  after.push(() => $$('[data-count]').forEach(el => countUp(el, +el.dataset.count, +el.dataset.dec || 0, el.dataset.suf || '')));
+
+  let hero;
+  if (S.active) {
+    hero = `<div class="card hl"><span class="pill lime">IN PROGRESS</span><h2 class="mt">${esc(S.active.day_name)}</h2>
+      <div class="small muted mb">Started ${ago(S.active.started)} · ${S.active.exercises.length} exercises</div>
+      ${btn('▶ Resume workout', 'go', 'Jumps back into the workout you haven’t finished yet.', 'primary big', 'data-to="#/log"')}</div>`;
+  } else if (day) {
+    hero = `<div class="card hl"><div class="row between"><span class="pill lime">NEXT UP</span><span class="small muted">${esc(split.name)}</span></div>
+      <h2 class="mt" style="font-size:34px">${esc(day.name)}</h2><div class="small muted">${esc(day.focus || '')}</div>
+      <div class="small mt mb">${day.exercises.map(e => esc(e.name)).join(' · ')}</div>
+      ${btn('Start today’s workout 💥', 'startDay', 'Opens the logger with every exercise ready. Weights from last time are filled in for you.', 'primary big', `data-split="${split.id}" data-day="${nd}"`)}
+      <div class="row mt">${btn('Pick a different day', 'go', 'See all days in your split.', 'sm ghost', 'data-to="#/train"')}</div></div>`;
+  } else {
+    hero = `<div class="card hl"><h2>Let’s get you a plan 📋</h2><p class="muted small mb">Pick a ready-made gym split or build your own. You can change it any time.</p>
+      ${btn('Choose a split', 'go', 'Browse PPL, Upper/Lower, 5×5 and splits other users made.', 'primary big', 'data-to="#/splits"')}
+      <div class="mt">${btn('Just log a quick workout', 'startEmpty', 'Starts a blank workout — add any exercises you like.', 'full')}</div></div>`;
+  }
+  return `
+    <div class="row between mb"><div><h1>Hey ${esc(me.username)} ${esc(me.avatar)}</h1>
+      <div class="small muted">${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}${lastDays != null && lastDays >= 3 ? ` · <span class="red">${lastDays} days since you trained 😬</span>` : ''}</div></div></div>
+    ${hero}
+    <div class="stats mb">
+      <div class="stat"><div class="v" data-count="${workouts.length}">0</div><div class="l">Workouts</div></div>
+      <div class="stat"><div class="v" data-count="${weekDays}">0</div><div class="l">Days this wk</div></div>
+      <div class="stat"><div class="v"><span data-count="${streak}">0</span>🔥</div><div class="l">Week streak</div></div>
+      <div class="stat"><div class="v ${rank === 1 ? 'gold' : ''}">${rank ? '#' + rank : '—'}</div><div class="l">${myRow?.gain_pct != null ? pct(myRow.gain_pct) : 'Rank'}</div></div>
+    </div>
+    ${notifCard()}
+    ${recapCard(recap)}
+    <div class="sec-title"><h2>Live feed</h2><a href="#/social" class="small lime">See all →</a></div>
+    <p class="help">Every workout anyone finishes shows up here. Tap one to react or comment.</p>
+    ${feed.length ? feed.map(w => `<a href="#/workout/${w.id}" class="lrow">${avatar(prof(w.user_id))}<div class="grow"><b>${esc(prof(w.user_id).username)}</b> <span class="muted">finished</span> ${esc(w.day_name || 'a workout')}<div class="tiny muted">${ago(w.created_at)} · ${kg(w.total_volume)} moved</div></div><span>›</span></a>`).join('')
+      : `<div class="empty"><span class="e">🦗</span>No workouts yet. Be the first — everyone will get notified.</div>`}
+  `;
+}
+function recapCard(recap) {
+  return `<div class="card gold"><div class="row between"><h3>🤖 AI Coach recap</h3>${recap ? `<span class="tiny muted">${ago(recap.created_at)}</span>` : ''}</div>
+    <p class="mt small" style="white-space:pre-wrap">${recap ? esc(recap.content) : 'No recap yet. Hit the button and the AI coach will read the real leaderboard and call out who’s winning, who’s slacking and who went backwards.'}</p>
+    <div class="mt">${btn('🎙️ Get a fresh recap', 'recap', 'AI reads everyone’s real numbers and writes a shout-out + roast. Everyone gets notified. Max once an hour.', 'sm')}</div></div>`;
+}
+A.recap = async el => {
+  el.disabled = true; el.textContent = 'Coach is thinking…';
+  const { data, error } = await sb.functions.invoke('ai-recap', { body: { force: true } });
+  if (error) {
+    let msg = error.message;
+    try { msg = (await error.context.json()).error || msg; } catch {}
+    toast('Coach unavailable', msg, 'loss');
+  } else if (data?.recap) { sound('badge'); }
+  render();
+};
+
+/* ================== TRAIN ================== */
+async function viewTrain() {
+  const workouts = await ensureMyWorkouts(true);
+  const split = S.splits.find(s => s.id === S.me.active_split_id);
+  const nd = nextDay(split, workouts);
+  return `<h1>Train</h1><p class="help mt">Pick today’s day and hit Start. Log each set, tick it off, then Finish.</p>
+    ${S.active ? `<div class="card hl">${btn('▶ Resume “' + esc(S.active.day_name) + '”', 'go', 'You have a workout in progress — jump back in.', 'primary big', 'data-to="#/log"')}</div>` : ''}
+    ${split ? `<div class="card"><div class="row between"><div><div class="tiny muted">YOUR SPLIT</div><h2 style="margin:2px 0 0">${esc(split.name)}</h2></div>
+      ${btn('Change', 'go', 'Pick another split.', 'sm', 'data-to="#/splits"')}</div></div>
+      ${split.days.map((d, i) => `<div class="card ${i === nd ? 'hl' : ''}"><div class="row between"><div><h3>${esc(d.name)} ${i === nd ? '<span class="pill lime">NEXT</span>' : ''}</h3><div class="small muted">${esc(d.focus || '')}</div></div></div>
+        <div class="small mt">${d.exercises.map(e => `${esc(e.name)} <span class="dim">${e.sets}×${esc(e.reps)}</span>`).join(' · ')}</div>
+        <div class="mt">${btn('Start ' + esc(d.name), 'startDay', 'Loads these exercises into the workout logger.', i === nd ? 'primary full' : 'full', `data-split="${split.id}" data-day="${i}"`)}</div></div>`).join('')}`
+      : `<div class="card hl"><h3>No split yet</h3><p class="small muted mb">Follow a split to get your days laid out here.</p>${btn('Choose a split', 'go', 'Browse ready-made and community splits.', 'primary full', 'data-to="#/splits"')}</div>`}
+    <div class="card">${btn('➕ Quick empty workout', 'startEmpty', 'Starts a blank session — add whatever exercises you’re doing today.', 'full')}</div>
+    <div class="card">${btn('📚 Browse all splits', 'go', 'Ready-made splits, community splits, and your own.', 'full', 'data-to="#/splits"')}</div>
+    <div class="sec-title"><h2>Gym tools</h2></div>
+    <div class="card"><h3>🧮 Plate calculator</h3><p class="small muted">Type the total weight — we’ll tell you what to put on each side of a 20kg bar.</p>
+      <div class="row mt"><input class="inp" id="plateIn" type="number" inputmode="decimal" placeholder="e.g. 100"><button class="btn" data-act="plates">Calc</button></div>
+      <div class="tip mt">Works out the plates per side.</div><div id="plateOut" class="mt"></div></div>
+    <div class="card"><h3>💯 1-rep max estimator</h3><p class="small muted">Weight and reps you did → your estimated max for one rep.</p>
+      <div class="row mt"><input class="inp" id="ormW" type="number" inputmode="decimal" placeholder="kg"><input class="inp" id="ormR" type="number" inputmode="numeric" placeholder="reps"><button class="btn" data-act="orm">Calc</button></div>
+      <div class="tip mt">Uses the same formula as the leaderboard.</div><div id="ormOut" class="mt"></div></div>`;
+}
+A.plates = () => {
+  let side = ((+$('#plateIn').value || 0) - 20) / 2;
+  if (side < 0) return $('#plateOut').innerHTML = '<span class="muted">That’s less than the empty bar (20kg).</span>';
+  const out = [];
+  for (const p of [25, 20, 15, 10, 5, 2.5, 1.25]) while (side >= p - 1e-9) { out.push(p); side -= p; }
+  $('#plateOut').innerHTML = `<b>Each side:</b> ${out.length ? out.map(p => `<span class="pill lime">${p}</span>`).join(' ') : 'nothing — just the bar'}${side > .01 ? `<div class="tiny muted mt">(${side.toFixed(2)}kg left over — can’t be made with standard plates)</div>` : ''}`;
+};
+A.orm = () => {
+  const v = e1rm(+$('#ormW').value || 0, +$('#ormR').value || 0);
+  $('#ormOut').innerHTML = v ? `Estimated 1RM: <b class="lime" style="font-size:20px">${kg(v)}</b>` : '<span class="muted">Enter weight and reps.</span>';
+};
+
+/* ================== WORKOUT LOGGER ================== */
+function mkExercise(name, sets = 3, reps = '') {
+  const last = lastFor(name);
+  const ls = last?.sets || [];
+  return {
+    name, target: String(reps || ''), last: last ? { sets: ls.map(s => [+s.weight, +s.reps]), best: last.best } : null,
+    sets: Array.from({ length: +sets || 3 }, (_, i) => ({ w: ls[i]?.weight ?? ls[ls.length - 1]?.weight ?? '', r: '', done: false })),
+  };
+}
+function saveActive() { lsSet('lb_active', S.active); }
+A.startDay = async el => {
+  if (S.active && !await confirmBox('Replace current workout?', 'You have a workout in progress. Starting a new one throws it away.', 'Start new')) return;
+  await ensureMyLifts(true);
+  const split = S.splits.find(s => s.id === el.dataset.split), day = split.days[+el.dataset.day];
+  S.active = { split_id: split.id, day_name: day.name, started: Date.now(), notes: '', exercises: day.exercises.map(e => mkExercise(e.name, e.sets, e.reps)) };
+  saveActive(); location.hash = '#/log';
+};
+A.startEmpty = async () => {
+  if (S.active && !await confirmBox('Replace current workout?', 'You have a workout in progress. Starting a new one throws it away.', 'Start new')) return;
+  await ensureMyLifts(true);
+  S.active = { split_id: null, day_name: 'Quick workout', started: Date.now(), notes: '', exercises: [] };
+  saveActive(); location.hash = '#/log';
+};
+async function viewLog() {
+  if (!S.active) { location.hash = '#/train'; return ''; }
+  await ensureMyLifts();
+  const a = S.active;
+  after.push(tickElapsed);
+  return `<div class="row between"><div class="grow"><input class="inp" style="font-family:'Bebas Neue';font-size:26px;padding:6px 10px;background:none;border-color:transparent" value="${esc(a.day_name)}" data-bind="day_name" aria-label="Workout name">
+      <div class="small muted" style="padding-left:10px">⏱ <span id="elapsed">0:00</span> · ${a.exercises.length} exercises</div></div>
+      <button class="btn sm danger" data-act="cancelLog">Discard</button></div>
+    <p class="help mt">Type the <b>kg</b> and <b>reps</b> you actually did, then tap <b>✓</b> when the set is done. Didn’t finish a set? Leave it unticked — it still counts as attempted. Tick a set to start the rest timer.</p>
+    ${a.exercises.map((ex, i) => exCard(ex, i)).join('') || '<div class="empty"><span class="e">🏋️</span>Add your first exercise below.</div>'}
+    <div class="card"><label class="f" style="margin-top:0">Add an exercise</label>
+      <div class="row"><input class="inp" id="newEx" list="exList" placeholder="Start typing… e.g. Bench Press"><button class="btn" data-act="addEx">Add</button></div>
+      <div class="tip mt">Pick from the list or type your own. We’ll pre-fill your weights from last time.</div>
+      <datalist id="exList">${EXERCISES.map(e => `<option value="${e}">`).join('')}</datalist></div>
+    <div class="card"><label class="f" style="margin-top:0">Notes (optional)</label><textarea class="inp" data-bind="notes" placeholder="How did it feel? Anything to remember?">${esc(a.notes)}</textarea></div>
+    ${btn('🏁 Finish workout', 'finish', 'Saves everything, checks for PRs and losses, updates the leaderboard and notifies everyone.', 'primary big')}
+    <div style="height:30px"></div>`;
+}
+function exCard(ex, i) {
+  const lastTxt = ex.last ? `Last time: ${ex.last.sets.map(([w, r]) => `${w}×${r}`).join(', ')} · Best ${kg(ex.last.best)}` : 'First time logging this — set your baseline!';
+  return `<div class="card ex-card" data-ex="${i}"><div class="row between"><h3>${esc(ex.name)}</h3><button class="xbtn" data-act="rmEx" data-i="${i}" title="Remove exercise" aria-label="Remove exercise">✕</button></div>
+    <div class="tiny muted">${ex.target ? `Target: ${esc(ex.target)} reps · ` : ''}${esc(lastTxt)}</div>
+    <table class="sets"><thead><tr><th class="num">Set</th><th>kg</th><th>Reps</th><th style="width:50px;text-align:center">Done</th></tr></thead><tbody>
+    ${ex.sets.map((s, j) => `<tr class="${s.done ? 'done' : ''}"><td class="num">${j + 1}</td>
+      <td><input type="number" inputmode="decimal" step="0.5" value="${esc(s.w)}" data-set="${i}.${j}.w" placeholder="0"></td>
+      <td><input type="number" inputmode="numeric" value="${esc(s.r)}" data-set="${i}.${j}.r" placeholder="${esc(parseInt(ex.target) || ex.last?.sets[j]?.[1] || '')}"></td>
+      <td style="text-align:center"><button class="tick ${s.done ? 'on' : ''}" data-act="tick" data-i="${i}" data-j="${j}" aria-label="Mark set done">✓</button></td></tr>`).join('')}
+    </tbody></table>
+    <div class="row mt"><button class="btn sm" data-act="addSet" data-i="${i}">+ Add set</button>${ex.sets.length > 1 ? `<button class="btn sm ghost" data-act="rmSet" data-i="${i}">− Remove last set</button>` : ''}</div>
+    <div class="tip mt">“Add set” copies your last set’s weight so you can go again.</div></div>`;
+}
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.set && S.active) {
+    const [i, j, k] = t.dataset.set.split('.');
+    S.active.exercises[+i].sets[+j][k] = t.value; saveActive();
+  } else if (t.dataset.bind && S.active) { S.active[t.dataset.bind] = t.value; saveActive(); }
+  else if (t.dataset.dbind && S.draft) { setPath(S.draft, t.dataset.dbind, t.value); }
+});
+function tickElapsed() {
+  const el = $('#elapsed'); if (!el || !S.active) return;
+  const s = Math.floor((Date.now() - S.active.started) / 1000);
+  el.textContent = `${Math.floor(s / 3600) ? Math.floor(s / 3600) + ':' : ''}${String(Math.floor(s / 60) % 60).padStart(Math.floor(s / 3600) ? 2 : 1, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+setInterval(tickElapsed, 1000);
+function rerenderEx(i) { const card = $(`[data-ex="${i}"]`); if (card) card.outerHTML = exCard(S.active.exercises[i], i); }
+A.tick = el => {
+  const i = +el.dataset.i, j = +el.dataset.j, s = S.active.exercises[i].sets[j], ex = S.active.exercises[i];
+  if (!s.done) {
+    if (s.r === '' || s.r == null) s.r = parseInt(ex.target) || ex.last?.sets[j]?.[1] || '';
+    if (s.r === '') { toast('How many reps?', 'Type the reps you did first.', 'loss'); $(`[data-set="${i}.${j}.r"]`)?.focus(); return; }
+    s.done = true; buzz([30]); startRest(prefs.rest);
+  } else s.done = false;
+  saveActive(); rerenderEx(i);
+};
+A.addSet = el => {
+  const ex = S.active.exercises[+el.dataset.i], l = ex.sets[ex.sets.length - 1];
+  ex.sets.push({ w: l?.w ?? '', r: '', done: false }); saveActive(); rerenderEx(+el.dataset.i);
+};
+A.rmSet = el => { S.active.exercises[+el.dataset.i].sets.pop(); saveActive(); rerenderEx(+el.dataset.i); };
+A.rmEx = async el => {
+  if (!await confirmBox('Remove exercise?', 'Any sets you logged for it will be lost.', 'Remove')) return;
+  S.active.exercises.splice(+el.dataset.i, 1); saveActive(); render();
+};
+A.addEx = async () => {
+  const name = $('#newEx').value.trim(); if (!name) return toast('Type an exercise name first', '', 'loss');
+  await ensureMyLifts();
+  S.active.exercises.push(mkExercise(name, 3, '')); saveActive(); render();
+};
+A.cancelLog = async () => {
+  if (!await confirmBox('Discard workout?', 'Nothing from this session will be saved.', 'Discard')) return;
+  S.active = null; saveActive(); stopRest(); location.hash = '#/train';
+};
+A.finish = async el => {
+  const a = S.active;
+  const rows = [];
+  a.exercises.forEach(ex => ex.sets.forEach((s, j) => {
+    const r = parseInt(s.r) || 0, w = parseFloat(s.w) || 0;
+    if (r > 0 || s.done) rows.push({ exercise: ex.name.trim(), set_no: j + 1, weight: w, reps: r, target_reps: parseInt(ex.target) || null, completed: !!s.done && r > 0 });
+  }));
+  if (!rows.some(r => r.completed)) return toast('Tick at least one set ✓', 'Mark the sets you completed before finishing.', 'loss');
+  el.disabled = true; el.textContent = 'Crunching your numbers…';
+  let wid = null;
+  try {
+    const w = await q(sb.from('workouts').insert({ user_id: S.me.id, split_id: a.split_id, day_name: a.day_name.trim() || 'Workout', notes: a.notes || '',
+      duration_min: Math.round((Date.now() - a.started) / 60000), performed_on: localDate() }).select().single());
+    wid = w.id;
+    await q(sb.from('lifts').insert(rows.map(r => ({ ...r, workout_id: wid, user_id: S.me.id }))));
+    const res = await q(sb.rpc('finish_workout', { p_workout: wid }));
+    S.active = null; saveActive(); stopRest(); S.myLifts = null; S.myWorkouts = null;
+    location.hash = '#/workout/' + wid;
+    showResults(res);
+  } catch (e) {
+    if (wid) await sb.from('workouts').delete().eq('id', wid);
+    toast('Couldn’t save workout', e.message, 'loss');
+    el.disabled = false; el.textContent = '🏁 Finish workout';
+  }
+};
+function showResults(r) {
+  const prs = r.prs || [], losses = r.losses || [], badges = r.badges || [], goals = r.goals || [];
+  const good = prs.length || badges.length || goals.length;
+  const m = modal(`
+    <div class="center"><div class="bigbadge">${prs.length ? '🔥' : losses.length ? '😬' : '💪'}</div>
+    <h1 class="mt">${prs.length ? `${prs.length} NEW PR${prs.length > 1 ? 'S' : ''}!` : losses.length ? 'Tough day…' : 'Workout done!'}</h1>
+    <p class="muted mt">You moved <b class="lime" id="volCount">0kg</b> today.</p></div>
+    ${prs.map(p => `<div class="card hl mt"><div class="row between"><b>🏅 ${esc(p.exercise)}</b><span class="pill lime">+${p.pct}%</span></div><div class="small muted">${p.weight}kg × ${p.reps} · was ${p.prev_weight}kg</div></div>`).join('')}
+    ${goals.map(g => `<div class="card gold mt"><b>🎯 Goal smashed: ${esc(g.exercise)} ${g.target}kg</b><div class="small muted">Everyone’s been told.</div></div>`).join('')}
+    ${losses.map(p => `<div class="card warn mt shake"><div class="row between"><b>📉 ${esc(p.exercise)}</b><span class="pill red">${p.pct}%</span></div><div class="small muted">${p.weight}kg × ${p.reps} · you did ${p.prev_weight}kg before. Everyone has been notified 😬</div></div>`).join('')}
+    ${badges.length ? `<h3 class="mt2">Badges unlocked</h3><div class="badges mt">${badges.map(b => `<div class="bdg new"><span class="e">${BADGES[b]?.[0] || '🏅'}</span><div class="n">${esc(BADGES[b]?.[1] || b)}</div></div>`).join('')}</div>` : ''}
+    <div class="card mt"><div class="row between"><div><div class="tiny muted">LEADERBOARD</div><b style="font-size:18px">${r.rank ? `#${r.rank} of ${r.ranked}` : 'Not ranked yet'}</b></div>
+      <div class="display lime" style="font-size:30px">${r.gain != null ? pct(r.gain) : ''}</div></div>
+      ${r.rank ? '' : '<div class="tiny muted mt">Log the same exercise in 2 sessions and you’ll appear on the board.</div>'}</div>
+    <div class="row mt">${btn('See leaderboard', 'goBoard', 'Check where you rank.', 'grow')}${btn('Done', 'closeModal', 'Back to your workout summary.', 'primary grow')}</div>`);
+  countUp($('#volCount', m), +r.volume || 0, 0, 'kg');
+  if (good) { boom(prs.length ? 1.3 : .8); sound(prs.length ? 'pr' : 'badge'); buzz([80, 50, 80, 50, 160]); }
+  else if (losses.length) { sound('loss'); buzz([300, 100, 300]); }
+  else sound('badge');
+}
+A.closeModal = () => closeModal();
+A.goBoard = () => { closeModal(); location.hash = '#/leaderboard'; };
+
+/* rest timer */
+let restT = null;
+function startRest(sec) {
+  stopRest();
+  const end = Date.now() + sec * 1000;
+  const slot = $('#restSlot');
+  const paint = () => {
+    const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+    slot.innerHTML = `<div class="resttimer">⏳ Rest ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}<button data-act="restAdd">+15s</button><button data-act="restSkip">Skip</button></div>`;
+    if (left <= 0) {
+      stopRest(); sound('rest'); buzz([200, 100, 200, 100, 400]); toast('Rest over — next set! 💪', '', 'pr', null, 2500);
+      if (document.hidden && window.Notification?.permission === 'granted' && S.swReg) S.swReg.showNotification('Rest over — next set! 💪', { icon: 'icon-192.png', tag: 'rest' });
+    }
+  };
+  restT = { end, iv: setInterval(paint, 500) };
+  paint();
+}
+function stopRest() { if (restT) clearInterval(restT.iv); restT = null; $('#restSlot').innerHTML = ''; }
+A.restSkip = () => stopRest();
+A.restAdd = () => { if (restT) startRest(Math.round((restT.end - Date.now()) / 1000) + 15); };
+
+/* ================== SPLITS ================== */
+async function viewSplits() {
+  await Promise.all([loadSplits(), loadProfiles()]);
+  const followers = {};
+  Object.values(S.profiles).forEach(p => { if (p.active_split_id) followers[p.active_split_id] = (followers[p.active_split_id] || 0) + 1; });
+  const tab = S.splitTab;
+  const list = S.splits.filter(s => tab === 'ready' ? !s.owner_id : tab === 'mine' ? s.owner_id === S.me.id : s.owner_id && s.owner_id !== S.me.id);
+  const welcome = S.welcome; S.welcome = false;
+  return `${welcome ? `<div class="card hl"><h2>Welcome to LiftBoard ${esc(S.me.avatar)}</h2><p class="small muted">Step 1: pick a split to follow. Hit <b>Follow</b> on any card below. Don’t overthink it — you can switch whenever.</p></div>` : ''}
+    <h1>Gym splits</h1><p class="help mt">A split is your weekly plan — which muscles you train on which day. Follow one, copy one to tweak it, or build your own. Everyone can see every split.</p>
+    <div class="seg mb">
+      <button class="${tab === 'ready' ? 'on' : ''}" data-act="splitTab" data-t="ready">Ready-made</button>
+      <button class="${tab === 'community' ? 'on' : ''}" data-act="splitTab" data-t="community">Community</button>
+      <button class="${tab === 'mine' ? 'on' : ''}" data-act="splitTab" data-t="mine">Mine</button>
+    </div>
+    <div class="mb">${btn('✏️ Create your own split', 'newSplit', 'Build a custom plan from scratch: name your days and pick exercises, sets and reps.', 'primary full')}</div>
+    ${list.length ? list.map(s => splitCard(s, followers[s.id] || 0)).join('') : `<div class="empty"><span class="e">📭</span>${tab === 'mine' ? 'You haven’t made a split yet.' : 'No community splits yet — make the first one!'}</div>`}`;
+}
+function splitCard(s, f) {
+  const mine = S.me.active_split_id === s.id;
+  return `<div class="card ${mine ? 'hl' : ''}">
+    <div class="row between"><div class="grow"><h3 style="font-size:18px">${esc(s.name)}</h3>
+      <div class="tiny muted">${s.owner_id ? 'by @' + esc(prof(s.owner_id).username) : 'LiftBoard original'} · ${esc(s.level || 'Any')} · ${s.days.length} days · 👥 ${f} following</div></div>
+      ${mine ? '<span class="pill lime">FOLLOWING</span>' : ''}</div>
+    <p class="small muted mt">${esc(s.description || '')}</p>
+    <div class="chip-list mt">${s.days.map(d => `<span class="chip">${esc(d.name)}</span>`).join('')}</div>
+    <div class="row mt" style="align-items:flex-start">
+      ${mine ? btn('✓ Following', 'noop', 'This is your current plan.', 'sm grow', 'disabled') : btn('Follow', 'follow', 'Makes this your plan. Your Train tab will show its days.', 'primary sm grow', `data-id="${s.id}"`)}
+      ${btn('View', 'go', 'See every day, exercise and comments.', 'sm grow', `data-to="#/split/${s.id}"`)}
+    </div></div>`;
+}
+A.noop = () => {};
+A.splitTab = el => { S.splitTab = el.dataset.t; render(); };
+A.follow = async el => {
+  await q(sb.from('profiles').update({ active_split_id: el.dataset.id }).eq('id', S.me.id));
+  S.me.active_split_id = el.dataset.id; S.profiles[S.me.id] = S.me;
+  boom(.5); sound('badge');
+  toast('Split followed!', 'Head to Train to start day one.', 'pr', '#/train');
+  location.hash = '#/train';
+};
+async function viewSplit(id) {
+  await loadSplits();
+  const s = S.splits.find(x => x.id === id); if (!s) return '<div class="empty">Split not found.</div>';
+  const comments = await q(sb.from('comments').select('*').eq('split_id', id).order('created_at'));
+  const followers = Object.values(S.profiles).filter(p => p.active_split_id === id);
+  const mine = s.owner_id === S.me.id, following = S.me.active_split_id === id;
+  return `<a href="#/splits" class="small muted">← All splits</a>
+    <h1 class="mt">${esc(s.name)}</h1><div class="small muted">${s.owner_id ? 'by ' + userLink(s.owner_id) : 'LiftBoard original'} · ${esc(s.level || '')}</div>
+    <p class="mt">${esc(s.description || '')}</p>
+    <div class="row mt wrap" style="align-items:flex-start">
+      ${following ? btn('✓ Following', 'noop', 'This is your current plan.', 'grow', 'disabled') : btn('Follow this split', 'follow', 'Makes it your plan.', 'primary grow', `data-id="${id}"`)}
+      ${btn('Copy & customise', 'copySplit', 'Makes your own editable copy you can tweak.', 'grow', `data-id="${id}"`)}
+    </div>
+    ${mine ? `<div class="row mt" style="align-items:flex-start">${btn('Edit', 'go', 'Change days and exercises.', 'sm grow', `data-to="#/split-edit/${id}"`)}${btn('Delete', 'delSplit', 'Removes it for everyone.', 'sm danger grow', `data-id="${id}"`)}</div>` : ''}
+    ${followers.length ? `<div class="card mt"><div class="tiny muted mb">👥 ${followers.length} FOLLOWING THIS</div><div class="row wrap">${followers.map(p => `<a href="#/user/${p.id}" title="${esc(p.username)}">${avatar(p, 'sm')}</a>`).join('')}</div></div>` : ''}
+    ${s.days.map(d => `<div class="card"><h3>${esc(d.name)}</h3><div class="small muted">${esc(d.focus || '')}</div>
+      ${d.exercises.map(e => `<div class="wk-ex"><span>${esc(e.name)}</span><span class="muted">${e.sets} × ${esc(e.reps)}</span></div>`).join('')}</div>`).join('')}
+    ${commentsBlock(comments, 'split', id)}`;
+}
+function commentsBlock(comments, type, id) {
+  return `<div class="sec-title"><h2>Comments (${comments.length})</h2></div>
+    ${comments.map(c => `<div class="card" style="padding:12px"><div class="row between">${userLink(c.user_id)}<span class="tiny muted">${ago(c.created_at)}</span></div>
+      <p class="mt small">${esc(c.body)}</p>${c.user_id === S.me.id ? `<button class="btn sm ghost mt" data-act="delComment" data-id="${c.id}">Delete</button>` : ''}</div>`).join('') || '<p class="small muted mb">No comments yet. Say something!</p>'}
+    <div class="card"><textarea class="inp" id="cBody" maxlength="500" placeholder="Write a comment… hype them up or roast them 😂"></textarea>
+      <div class="mt">${btn('Post comment', 'postComment', 'Everyone can see it, and the owner gets a notification.', 'primary full', `data-type="${type}" data-id="${id}"`)}</div></div>`;
+}
+A.postComment = async el => {
+  const body = $('#cBody').value.trim(); if (!body) return toast('Write something first', '', 'loss');
+  el.disabled = true;
+  await q(sb.from('comments').insert({ user_id: S.me.id, body, [el.dataset.type + '_id']: el.dataset.id }));
+  toast('Comment posted', '', 'comment'); render();
+};
+A.delComment = async el => { await q(sb.from('comments').delete().eq('id', el.dataset.id)); render(); };
+A.copySplit = el => {
+  const s = S.splits.find(x => x.id === el.dataset.id);
+  S.draft = { id: null, name: s.name + ' (my version)', description: s.description, level: s.level, days: JSON.parse(JSON.stringify(s.days)) };
+  location.hash = '#/split-edit';
+};
+A.newSplit = () => { S.draft = null; location.hash = '#/split-edit'; };
+A.delSplit = async el => {
+  if (!await confirmBox('Delete this split?', 'It disappears for everyone, including followers.', 'Delete')) return;
+  await q(sb.from('splits').delete().eq('id', el.dataset.id));
+  toast('Split deleted'); location.hash = '#/splits';
+};
+
+/* split builder */
+function setPath(obj, path, val) {
+  const ks = path.split('.'); let o = obj;
+  ks.slice(0, -1).forEach(k => o = o[k]);
+  const last = ks[ks.length - 1];
+  o[last] = last === 'sets' ? (parseInt(val) || '') : val;
+}
+async function viewSplitEdit(id) {
+  if (id && (!S.draft || S.draft.id !== id)) {
+    await loadSplits();
+    const s = S.splits.find(x => x.id === id);
+    if (!s || s.owner_id !== S.me.id) return '<div class="empty">You can only edit your own splits.</div>';
+    S.draft = { id, name: s.name, description: s.description, level: s.level, days: JSON.parse(JSON.stringify(s.days)) };
+  }
+  if (!S.draft) S.draft = { id: null, name: '', description: '', level: 'Any', days: [{ name: 'Day 1', focus: '', exercises: [{ name: '', sets: 3, reps: '8-12' }] }] };
+  const d = S.draft;
+  return `<a href="#/splits" class="small muted">← Back</a><h1 class="mt">${d.id ? 'Edit split' : 'Build your split'}</h1>
+    <p class="help mt">Give it a name, add your training days, then the exercises for each day. Everyone on LiftBoard will be able to see and follow it.</p>
+    <div class="card"><label class="f" style="margin-top:0">Split name</label><input class="inp" data-dbind="name" value="${esc(d.name)}" placeholder="e.g. Summer Shred 4-Day" maxlength="60">
+      <label class="f">Short description</label><textarea class="inp" data-dbind="description" placeholder="Who is it for? How many days a week?">${esc(d.description)}</textarea>
+      <label class="f">Level</label><select class="inp" data-dbind="level">${['Any', 'Beginner', 'Intermediate', 'Advanced'].map(l => `<option ${l === d.level ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <datalist id="exList">${EXERCISES.map(e => `<option value="${e}">`).join('')}</datalist>
+    ${d.days.map((day, i) => `<div class="card"><div class="row between"><b class="muted tiny">DAY ${i + 1}</b>${d.days.length > 1 ? `<button class="btn sm danger" data-act="rmDay" data-i="${i}">Remove day</button>` : ''}</div>
+      <div class="row mt"><input class="inp" data-dbind="days.${i}.name" value="${esc(day.name)}" placeholder="Day name (e.g. Push)"><input class="inp" data-dbind="days.${i}.focus" value="${esc(day.focus || '')}" placeholder="Focus (e.g. Chest)"></div>
+      <div class="exrow tiny muted" style="margin-top:12px"><span>Exercise</span><span>Sets</span><span>Reps</span><span></span></div>
+      ${day.exercises.map((e, j) => `<div class="exrow"><input class="inp" list="exList" data-dbind="days.${i}.exercises.${j}.name" value="${esc(e.name)}" placeholder="Exercise">
+        <input class="inp" type="number" inputmode="numeric" data-dbind="days.${i}.exercises.${j}.sets" value="${esc(e.sets)}"><input class="inp" data-dbind="days.${i}.exercises.${j}.reps" value="${esc(e.reps)}" placeholder="8-12">
+        <button class="xbtn" data-act="rmDEx" data-i="${i}" data-j="${j}" aria-label="Remove exercise">✕</button></div>`).join('')}
+      <div class="mt">${btn('+ Add exercise', 'addDEx', 'Adds another exercise row to this day.', 'sm', `data-i="${i}"`)}</div></div>`).join('')}
+    <div class="mb">${btn('+ Add another day', 'addDay', 'Adds a new training day to the split.', 'full')}</div>
+    ${btn(d.id ? '💾 Save changes' : '💾 Save & publish split', 'saveSplit', 'Saves it publicly so you and everyone else can follow it.', 'primary big')}
+    <div style="height:30px"></div>`;
+}
+A.addDay = () => { S.draft.days.push({ name: 'Day ' + (S.draft.days.length + 1), focus: '', exercises: [{ name: '', sets: 3, reps: '8-12' }] }); render(); };
+A.rmDay = el => { S.draft.days.splice(+el.dataset.i, 1); render(); };
+A.addDEx = el => { S.draft.days[+el.dataset.i].exercises.push({ name: '', sets: 3, reps: '8-12' }); render(); };
+A.rmDEx = el => { S.draft.days[+el.dataset.i].exercises.splice(+el.dataset.j, 1); render(); };
+A.saveSplit = async el => {
+  const d = S.draft;
+  const days = d.days.map(day => ({ name: day.name.trim() || 'Day', focus: (day.focus || '').trim(),
+    exercises: day.exercises.filter(e => e.name.trim()).map(e => ({ name: e.name.trim(), sets: parseInt(e.sets) || 3, reps: String(e.reps || '8-12').trim() })) }))
+    .filter(day => day.exercises.length);
+  if ((d.name || '').trim().length < 2) return toast('Give your split a name', '', 'loss');
+  if (!days.length) return toast('Add at least one exercise', '', 'loss');
+  el.disabled = true;
+  const row = { name: d.name.trim(), description: (d.description || '').trim(), level: d.level || 'Any', days };
+  const saved = d.id ? await q(sb.from('splits').update(row).eq('id', d.id).select().single())
+                     : await q(sb.from('splits').insert({ ...row, owner_id: S.me.id }).select().single());
+  S.draft = null; boom(.6); sound('badge');
+  toast(d.id ? 'Split updated' : 'Split published! 🎉', 'Everyone can see it now.', 'pr');
+  location.hash = '#/split/' + saved.id;
+};
+
+/* ================== LEADERBOARD ================== */
+async function viewBoard() {
+  await loadProfiles();
+  const { period, scope } = S.board;
+  const gym = scope === 'gym' ? S.me.gym_id : null;
+  if (scope === 'gym' && !gym) {
+    return boardHeader() + `<div class="card hl"><h3>You’re not in a gym yet</h3><p class="small muted mb">Join or create a gym crew to get a leaderboard just for your mates.</p>${btn('Find a gym', 'go', 'See all gym crews or make your own.', 'primary full', 'data-to="#/gyms"')}</div>`;
+  }
+  const [rows, recap] = await Promise.all([
+    leaderboard(period === 'week' ? weekAgoISO() : null, gym),
+    sb.from('recaps').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle().then(r => r.data),
+  ]);
+  const ranked = rows.filter(r => r.gain_pct != null);
+  const unranked = rows.filter(r => r.gain_pct == null);
+  const top = ranked.slice(0, 3), rest = ranked.slice(3);
+  const pod = (r, place) => r ? `<a href="#/user/${r.user_id}" class="pod p${place}">${avatar(r)}<div class="name">${esc(r.username)}</div><div class="gain ${r.gain_pct < 0 ? 'neg' : ''}">${pct(r.gain_pct)}</div><div class="block">${place}</div></a>` : '<div></div>';
+  return boardHeader() + `
+    ${ranked.length ? `<div class="podium">${pod(top[1], 2)}${pod(top[0], 1)}${pod(top[2], 3)}</div>` : `<div class="empty"><span class="e">🏁</span>Nobody’s on the board ${period === 'week' ? 'this week' : 'yet'}.<div class="small mt">${period === 'week' ? 'Beat a lift you did before this week to get on.' : 'Log the same exercise in 2 sessions to get ranked.'}</div></div>`}
+    ${rest.map((r, i) => lrow(r, i + 4, i)).join('')}
+    ${unranked.length ? `<div class="tiny muted mt mb">NOT RANKED YET — ${period === 'week' ? 'no improvement data this week' : 'need 2 sessions of the same lift'}</div>${unranked.map((r, i) => lrow(r, '–', i + rest.length)).join('')}` : ''}
+    <div class="sec-title"><h2>Hall of fame & shame</h2></div><p class="help">Who’s working the hardest — and who isn’t. ${period === 'week' ? 'Last 7 days.' : 'All time.'}</p>
+    ${fame(rows)}
+    <div class="mt2">${recapCard(recap)}</div>`;
+}
+function boardHeader() {
+  const { period, scope } = S.board;
+  return `<div class="row between"><h1>Leaderboard</h1><button class="btn sm ghost" data-act="howRank">How it works?</button></div>
+    <p class="help mt">Ranked <b>pound for pound</b>: how much stronger you got compared to <i>yourself</i>, not who lifts the most.</p>
+    <div class="seg"><button class="${period === 'week' ? 'on' : ''}" data-act="boardPeriod" data-v="week">This week</button><button class="${period === 'all' ? 'on' : ''}" data-act="boardPeriod" data-v="all">All time</button></div>
+    <div class="seg mt mb"><button class="${scope === 'all' ? 'on' : ''}" data-act="boardScope" data-v="all">🌍 Everyone</button><button class="${scope === 'gym' ? 'on' : ''}" data-act="boardScope" data-v="gym">🏠 My gym</button></div>`;
+}
+function lrow(r, rank, i) {
+  const me = r.user_id === S.me.id;
+  const g = r.gain_pct;
+  return `<a href="#/user/${r.user_id}" class="lrow ${me ? 'me' : ''}" style="animation-delay:${i * 40}ms"><div class="rk">${rank}</div>${avatar(r)}
+    <div class="grow"><b>${esc(r.username)}${me ? ' (you)' : ''}</b><div class="tiny muted">${r.prs} PRs · ${r.days} days · ${kg(r.volume)}${r.drops ? ` · <span class="red">${r.drops} drop${r.drops === 1 ? '' : 's'}</span>` : ''}</div></div>
+    <div class="g ${g == null ? 'dim' : g > 0 ? 'lime' : g < 0 ? 'red' : 'muted'}">${pct(g)}</div></a>`;
+}
+function fame(rows) {
+  if (!rows.length) return '';
+  const by = (f, dir = -1, filt = () => true) => rows.filter(filt).slice().sort((a, b) => dir * ((f(a) ?? -1e9) - (f(b) ?? -1e9)))[0];
+  const card = (ttl, r, val, cls = '') => r ? `<a href="#/user/${r.user_id}" class="card ${cls}"><div class="ttl">${ttl}</div><div class="who">${avatar(r, 'sm')}${esc(r.username)}</div><div class="val">${val}</div></a>` : '';
+  const gains = by(r => r.gain_pct, -1, r => r.gain_pct != null);
+  const prs = by(r => r.prs, -1, r => r.prs > 0);
+  const days = by(r => r.days, -1, r => r.days > 0);
+  const vol = by(r => +r.volume, -1, r => r.volume > 0);
+  const least = rows.slice().sort((a, b) => a.days - b.days || (new Date(a.last_workout || 0) - new Date(b.last_workout || 0)))[0];
+  const drops = by(r => r.drops, -1, r => r.drops > 0);
+  const worst = by(r => r.gain_pct, 1, r => r.gain_pct != null);
+  const ghost = rows.slice().sort((a, b) => new Date(a.last_workout || 0) - new Date(b.last_workout || 0))[0];
+  return `<div class="fame">
+    ${card('👑 Most gains', gains, pct(gains?.gain_pct), 'hl')}
+    ${card('🔥 Most PRs', prs, (prs?.prs || 0) + ' PRs', 'hl')}
+    ${card('📅 Most days', days, (days?.days || 0) + ' days', 'hl')}
+    ${card('🏗️ Hardest worker', vol, kg(vol?.volume), 'hl')}
+    ${card('🛋️ Least days', least, least?.days + ' days', 'warn')}
+    ${card('📉 Went backwards', drops, (drops?.drops || 0) + (drops?.drops === 1 ? ' drop' : ' drops'), 'warn')}
+    ${worst && worst.user_id !== gains?.user_id ? card('🐢 Smallest gains', worst, pct(worst.gain_pct), 'warn') : ''}
+    ${card('👻 Ghost', ghost, ghost?.last_workout ? daysSince(ghost.last_workout) + ' days since last' : 'never trained', 'warn')}
+  </div>`;
+}
+A.boardPeriod = el => { S.board.period = el.dataset.v; lsSet('lb_period', el.dataset.v); render(); };
+A.boardScope = el => { S.board.scope = el.dataset.v; render(); };
+A.howRank = () => modal(`<h2>How the leaderboard works</h2>
+  <p class="muted mt">We don’t care who’s biggest. We care who’s <b class="lime">improving the most</b>.</p>
+  <div class="card mt"><b>1. Every set becomes a strength score</b><p class="small muted mt">We estimate your 1-rep max: weight × (1 + reps ÷ 30). So 60kg × 10 counts more than 60kg × 5.</p></div>
+  <div class="card"><b>2. We compare you to YOU</b><p class="small muted mt"><b>This week:</b> your best this week vs your best before this week.<br><b>All time:</b> your best ever vs your very first session.</p></div>
+  <div class="card"><b>3. Average % gain = your score</b><p class="small muted mt">Across every exercise you’ve done more than once.</p></div>
+  <div class="card hl"><b>Example</b><p class="small mt">Sam benches 50kg → 70kg = <b class="lime">+40%</b><br>Alex benches 80kg → 90kg = <b>+12.5%</b><br>Sam ranks higher — even though Alex lifts more. 💪</p></div>
+  <p class="small muted">Go backwards by more than 5% and everyone gets notified. 😬</p>
+  <button class="btn primary full mt" onclick="closeModal()">Got it</button>`);
+
+/* ================== SOCIAL ================== */
+async function viewSocial(tab) {
+  tab = tab || S.feedTab; S.feedTab = tab;
+  const head = `<h1>Social</h1><p class="help mt">See everyone’s workouts, hype people up, message them or give them a nudge.</p>
+    <div class="seg mb"><button class="${tab === 'feed' ? 'on' : ''}" data-act="go" data-to="#/social/feed">📰 Feed</button><button class="${tab === 'people' ? 'on' : ''}" data-act="go" data-to="#/social/people">🧑‍🤝‍🧑 People</button><button class="${tab === 'chats' ? 'on' : ''}" data-act="go" data-to="#/social/chats">💬 Chats${S.unreadMsgs ? ` (${S.unreadMsgs})` : ''}</button></div>`;
+  if (tab === 'people') return head + await peopleList();
+  if (tab === 'chats') return head + await chatList();
+  const feed = await q(sb.from('workouts').select('id,user_id,day_name,notes,total_volume,created_at,duration_min,lifts(exercise,weight,reps,completed),reactions(user_id,emoji),comments(count)')
+    .eq('finished', true).order('created_at', { ascending: false }).limit(30));
+  return head + (feed.map(workoutCard).join('') || `<div class="empty"><span class="e">🦗</span>Quiet in here. Finish a workout and you’ll be the first post.</div>`);
+}
+function bestSets(lifts) {
+  const m = {};
+  lifts.filter(l => l.completed).forEach(l => {
+    const k = l.exercise.trim().toLowerCase();
+    if (!m[k] || e1rm(+l.weight, l.reps) > e1rm(+m[k].weight, m[k].reps)) m[k] = l;
+  });
+  return Object.values(m);
+}
+function rxBar(w) {
+  const counts = {}; (w.reactions || []).forEach(r => counts[r.emoji] = (counts[r.emoji] || 0) + 1);
+  const mine = (w.reactions || []).find(r => r.user_id === S.me.id)?.emoji;
+  return `<div class="rx" data-rx="${w.id}">${REACTIONS.map(e => `<button class="${mine === e ? 'on' : ''}" data-act="react" data-w="${w.id}" data-e="${e}" aria-label="React ${e}">${e}${counts[e] ? ' ' + counts[e] : ''}</button>`).join('')}</div>`;
+}
+function workoutCard(w) {
+  const best = bestSets(w.lifts || []);
+  const c = w.comments?.[0]?.count || 0;
+  return `<div class="card"><div class="row between">${userLink(w.user_id)}<span class="tiny muted">${ago(w.created_at)}</span></div>
+    <a href="#/workout/${w.id}" class="col mt" style="gap:0"><b style="font-size:17px">${esc(w.day_name || 'Workout')}</b>
+    <div class="tiny muted mb">${kg(w.total_volume)} moved${w.duration_min ? ` · ${w.duration_min} min` : ''}</div>
+    ${best.slice(0, 4).map(l => `<div class="wk-ex"><span>${esc(l.exercise)}</span><b>${+l.weight}kg × ${l.reps}</b></div>`).join('')}
+    ${best.length > 4 ? `<div class="tiny muted mt">+${best.length - 4} more exercises</div>` : ''}
+    ${w.notes ? `<p class="small muted mt">“${esc(w.notes)}”</p>` : ''}</a>
+    ${rxBar(w)}
+    <a href="#/workout/${w.id}" class="tiny muted" style="display:block;margin-top:8px">🗨️ ${c} comment${c === 1 ? '' : 's'} · tap to view</a></div>`;
+}
+A.react = async el => {
+  const wid = el.dataset.w, e = el.dataset.e;
+  const was = el.classList.contains('on');
+  if (was) await q(sb.from('reactions').delete().eq('workout_id', wid).eq('user_id', S.me.id));
+  else { await q(sb.from('reactions').upsert({ workout_id: wid, user_id: S.me.id, emoji: e })); buzz([20]); }
+  const reactions = await q(sb.from('reactions').select('user_id,emoji').eq('workout_id', wid));
+  const bar = $(`[data-rx="${wid}"]`); if (bar) bar.outerHTML = rxBar({ id: wid, reactions });
+  if (!was) $(`[data-rx="${wid}"] [data-e="${e}"]`)?.classList.add('pop');
+};
+async function viewWorkout(id) {
+  const w = await q(sb.from('workouts').select('*,lifts(*),reactions(user_id,emoji)').eq('id', id).maybeSingle());
+  if (!w) return '<div class="empty">Workout not found.</div>';
+  const comments = await q(sb.from('comments').select('*').eq('workout_id', id).order('created_at'));
+  const groups = {};
+  w.lifts.sort((a, b) => a.id - b.id).forEach(l => (groups[l.exercise] = groups[l.exercise] || []).push(l));
+  const mine = w.user_id === S.me.id;
+  return `<a href="#/social" class="small muted">← Feed</a>
+    <div class="row between mt">${userLink(w.user_id)}<span class="tiny muted">${new Date(w.created_at).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span></div>
+    <h1 class="mt">${esc(w.day_name || 'Workout')}</h1>
+    <div class="stats three mt mb"><div class="stat"><div class="v">${kg(w.total_volume)}</div><div class="l">Volume</div></div>
+      <div class="stat"><div class="v">${w.lifts.filter(l => l.completed).length}/${w.lifts.length}</div><div class="l">Sets done</div></div>
+      <div class="stat"><div class="v">${w.duration_min || '–'}</div><div class="l">Minutes</div></div></div>
+    ${Object.entries(groups).map(([ex, ls]) => `<div class="card"><h3>${esc(ex)}</h3>
+      ${ls.map(l => `<div class="wk-ex"><span class="muted">Set ${l.set_no}</span><span>${+l.weight}kg × ${l.reps}${l.target_reps ? ` <span class="dim">/ ${l.target_reps}</span>` : ''} ${l.completed ? '<span class="lime">✓</span>' : '<span class="red" title="Not completed">✗</span>'}</span></div>`).join('')}</div>`).join('')}
+    ${w.notes ? `<div class="card"><div class="tiny muted">NOTES</div><p class="mt">${esc(w.notes)}</p></div>` : ''}
+    <div class="card"><div class="tiny muted">REACT</div>${rxBar(w)}<div class="tip mt">Tap an emoji to react — ${mine ? 'that’s your workout!' : 'they get notified.'}</div></div>
+    ${mine ? `<div class="mb">${btn('Delete this workout', 'delWorkout', 'Removes it from your history and the leaderboard.', 'sm danger', `data-id="${id}"`)}</div>` : ''}
+    ${commentsBlock(comments, 'workout', id)}`;
+}
+A.delWorkout = async el => {
+  if (!await confirmBox('Delete workout?', 'It’ll be removed from your history and the leaderboard maths.', 'Delete')) return;
+  await q(sb.from('workouts').delete().eq('id', el.dataset.id));
+  S.myLifts = null; S.myWorkouts = null; toast('Workout deleted'); location.hash = '#/profile';
+};
+async function peopleList() {
+  await loadProfiles();
+  const rows = await leaderboard(null, null);
+  const byId = Object.fromEntries(rows.map(r => [r.user_id, r]));
+  const people = Object.values(S.profiles).filter(p => p.id !== S.me.id).sort((a, b) => (byId[b.id]?.days || 0) - (byId[a.id]?.days || 0));
+  if (!people.length) return `<div class="empty"><span class="e">🫥</span>It’s just you so far. Send the link to your mates!</div>
+    ${btn('Copy invite link', 'invite', 'Copies the app link so you can send it to friends.', 'primary full')}`;
+  return `<div class="tiny muted mb">${people.length + 1} real people on LiftBoard (including you). No bots. Ever.</div>
+    ${people.map(p => { const r = byId[p.id] || {}; const d = daysSince(r.last_workout);
+      return `<div class="card"><a href="#/user/${p.id}" class="row">${avatar(p)}<div class="grow"><b>${esc(p.username)}</b><div class="tiny muted">${r.days || 0} days trained · ${d == null ? 'never trained' : d === 0 ? 'trained today 💪' : `last trained ${d}d ago`}</div></div><span class="${r.gain_pct > 0 ? 'lime' : 'muted'} display" style="font-size:22px">${pct(r.gain_pct)}</span></a>
+      <div class="row mt" style="align-items:flex-start">${btn('💬 Message', 'go', 'Opens a private chat.', 'sm grow', `data-to="#/chat/${p.id}"`)}${btn('👊 Nudge', 'nudge', 'Sends them a “get to the gym” notification.', 'sm grow', `data-id="${p.id}"`)}</div></div>`; }).join('')}
+    ${btn('Copy invite link', 'invite', 'Copies the app link so you can send it to friends.', 'full')}`;
+}
+A.nudge = async el => {
+  const msg = await q(sb.rpc('nudge', { p_target: el.dataset.id }));
+  toast(msg, '', msg.startsWith('Nudge') ? 'nudge' : '');
+  if (msg.startsWith('Nudge')) { el.classList.add('pop'); buzz([40]); }
+};
+A.invite = async () => {
+  const url = location.origin + location.pathname;
+  try { if (navigator.share) await navigator.share({ title: 'LiftBoard', text: 'Come lift with me on LiftBoard 🏋️', url }); else { await navigator.clipboard.writeText(url); toast('Link copied!', url, 'pr'); } }
+  catch { toast('Here’s the link', url); }
+};
+async function chatList() {
+  const msgs = await q(sb.from('messages').select('*').or(`sender_id.eq.${S.me.id},recipient_id.eq.${S.me.id}`).order('created_at', { ascending: false }).limit(400));
+  const convos = {};
+  msgs.forEach(m => {
+    const other = m.sender_id === S.me.id ? m.recipient_id : m.sender_id;
+    if (!convos[other]) convos[other] = { last: m, unread: 0 };
+    if (m.recipient_id === S.me.id && !m.read_at) convos[other].unread++;
+  });
+  const list = Object.entries(convos);
+  return (list.length ? list.map(([id, c]) => `<a href="#/chat/${id}" class="lrow">${avatar(prof(id))}<div class="grow"><b>${esc(prof(id).username)}</b>
+      <div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.last.sender_id === S.me.id ? 'You: ' : ''}${esc(c.last.body)}</div></div>
+      <div class="col" style="align-items:flex-end;gap:4px"><span class="tiny muted">${ago(c.last.created_at)}</span>${c.unread ? `<span class="pill red">${c.unread}</span>` : ''}</div></a>`).join('')
+    : `<div class="empty"><span class="e">💬</span>No chats yet.</div>`)
+    + `<div class="mt">${btn('Start a new chat', 'go', 'Pick someone from the People tab to message.', 'full', 'data-to="#/social/people"')}</div>`;
+}
+let chatWith = null;
+async function viewChat(id) {
+  chatWith = id;
+  if (!S.profiles[id]) await loadProfiles();
+  const msgs = await q(sb.from('messages').select('*')
+    .or(`and(sender_id.eq.${S.me.id},recipient_id.eq.${id}),and(sender_id.eq.${id},recipient_id.eq.${S.me.id})`).order('created_at').limit(300));
+  sb.from('messages').update({ read_at: new Date().toISOString() }).eq('recipient_id', S.me.id).eq('sender_id', id).is('read_at', null).then(refreshCounts);
+  sb.from('notifications').update({ read: true }).eq('user_id', S.me.id).eq('kind', 'message').eq('actor_id', id).eq('read', false).then(refreshCounts);
+  after.push(() => { window.scrollTo(0, document.body.scrollHeight); $('#chatIn')?.focus(); });
+  const p = prof(id);
+  return `<div class="row between mb"><a href="#/social/chats" class="small muted">← Chats</a>${btn('👊 Nudge', 'nudge', '', 'sm', `data-id="${id}"`)}</div>
+    <a href="#/user/${id}" class="row mb">${avatar(p)}<div><b style="font-size:18px">${esc(p.username)}</b><div class="tiny muted">Private chat · only you two can see this</div></div></a>
+    <div class="bubbles" id="bubbles">${msgs.map(bubble).join('') || '<p class="small muted center">Say hi 👋</p>'}</div>
+    <form class="composer" onsubmit="return false"><div class="in"><input class="inp" id="chatIn" placeholder="Message ${esc(p.username)}…" maxlength="1000" autocomplete="off"><button class="btn primary" data-act="sendMsg" type="submit">Send</button></div></form>`;
+}
+const bubble = m => `<div class="bub ${m.sender_id === S.me.id ? 'mine' : ''}">${esc(m.body)}<div class="t">${ago(m.created_at)}</div></div>`;
+A.sendMsg = async () => {
+  const inp = $('#chatIn'), body = inp.value.trim(); if (!body) return;
+  inp.value = '';
+  const m = await q(sb.from('messages').insert({ sender_id: S.me.id, recipient_id: chatWith, body }).select().single());
+  $('#bubbles').insertAdjacentHTML('beforeend', bubble(m)); window.scrollTo(0, document.body.scrollHeight); inp.focus();
+};
+function onMessage(m) {
+  if (location.hash === '#/chat/' + m.sender_id) {
+    $('#bubbles')?.insertAdjacentHTML('beforeend', bubble(m)); window.scrollTo(0, document.body.scrollHeight);
+    sb.from('messages').update({ read_at: new Date().toISOString() }).eq('id', m.id).then(() => {});
+    sound('message');
+  } else { S.unreadMsgs++; paintCounts(); }
+}
+
+/* ================== NOTIFICATIONS PAGE ================== */
+async function viewNotifs() {
+  const list = await q(sb.from('notifications').select('*').eq('user_id', S.me.id).order('created_at', { ascending: false }).limit(100));
+  return `<div class="row between"><h1>Notifications</h1>${list.some(n => !n.read) ? `<button class="btn sm" data-act="readAll">Mark all read</button>` : ''}</div>
+    <p class="help mt">PRs, leaderboard changes, losses, badges, messages and nudges — all in one place. Tap one to jump to it.</p>
+    ${notifCard()}
+    ${S.pushOn ? `<div class="card"><div class="row between"><div><b>🔔 Push is ON</b><div class="tiny muted">You’ll get alerts even when the app is closed.</div></div>${btn('Test', 'testPush', '', 'sm')}</div></div>` : ''}
+    ${list.map((n, i) => `<div class="notif ${n.read ? '' : 'unread'}" data-act="openNotif" data-id="${n.id}" data-link="${esc(safeLink(n.link))}" style="animation-delay:${Math.min(i, 12) * 30}ms">
+      <div class="ic">${KIND_ICON[n.kind] || '✨'}</div><div class="grow"><b>${esc(n.title)}</b>${n.body ? `<div class="small muted">${esc(n.body)}</div>` : ''}<div class="tiny dim">${ago(n.created_at)}</div></div></div>`).join('')
+      || '<div class="empty"><span class="e">🔕</span>Nothing yet. When people lift, you’ll hear about it.</div>'}`;
+}
+A.readAll = async () => { await q(sb.from('notifications').update({ read: true }).eq('user_id', S.me.id).eq('read', false)); S.unread = 0; paintCounts(); render(); };
+A.openNotif = async el => {
+  sb.from('notifications').update({ read: true }).eq('id', el.dataset.id).then(refreshCounts);
+  location.hash = el.dataset.link;
+};
+A.testPush = async () => { await q(sb.rpc('test_push')); };
+
+/* ================== PROFILE ================== */
+async function viewUser(id) {
+  await loadProfiles();
+  const p = S.profiles[id]; if (!p) return '<div class="empty">User not found.</div>';
+  const me = id === S.me.id;
+  const [workouts, lifts, badges, goals, allRows, weekRows] = await Promise.all([
+    q(sb.from('workouts').select('id,day_name,performed_on,created_at,total_volume').eq('user_id', id).eq('finished', true).order('created_at', { ascending: false })),
+    q(sb.from('lifts').select('exercise,weight,reps,e1rm,completed,created_at').eq('user_id', id).eq('completed', true).order('created_at').limit(5000)),
+    q(sb.from('user_badges').select('*').eq('user_id', id)),
+    q(sb.from('goals').select('*').eq('user_id', id).order('created_at', { ascending: false })),
+    leaderboard(null, null), leaderboard(weekAgoISO(), null),
+  ]);
+  const ranked = allRows.filter(r => r.gain_pct != null);
+  const row = allRows.find(r => r.user_id === id) || {}, wrow = weekRows.find(r => r.user_id === id) || {};
+  const rank = ranked.findIndex(r => r.user_id === id) + 1;
+  const split = S.splits.find(s => s.id === p.active_split_id), gym = S.gyms.find(g => g.id === p.gym_id);
+  const earned = Object.fromEntries(badges.map(b => [b.badge, b]));
+  // personal records per exercise
+  const prs = {};
+  lifts.forEach(l => { const k = l.exercise.trim().toLowerCase(); if (!prs[k] || +l.e1rm > +prs[k].e1rm) prs[k] = l; });
+  const exNames = [...new Set(lifts.map(l => l.exercise.trim()))];
+  const bestW = ex => lifts.filter(l => l.exercise.trim().toLowerCase() === ex.trim().toLowerCase()).reduce((m, l) => Math.max(m, +l.weight), 0);
+  const streak = weekStreak(workouts.map(w => w.performed_on));
+  const totalDays = new Set(workouts.map(w => w.performed_on)).size;
+  const lastD = daysSince(workouts[0]?.created_at);
+  const chartEx = exNames.find(n => n.toLowerCase() === (S.chartEx || '').toLowerCase()) || Object.values(prs).sort((a, b) => b.e1rm - a.e1rm)[0]?.exercise?.trim();
+  after.push(() => { $$('.progress i').forEach(i => requestAnimationFrame(() => i.style.width = i.dataset.w)); if (chartEx) drawChart(lifts, chartEx); });
+  return `<div class="center">${avatar(p, 'lg').replace('class="av lg"', 'class="av lg" style="margin:0 auto"')}
+      <h1 class="mt">${esc(p.username)}</h1>
+      <div class="small muted">${gym ? esc(gym.emoji + ' ' + gym.name) + ' · ' : ''}${split ? 'Following ' + esc(split.name) : 'No split yet'}</div>
+      ${p.bio ? `<p class="mt">${esc(p.bio)}</p>` : ''}
+      <div class="small mt ${lastD != null && lastD >= 4 ? 'red' : 'muted'}">${lastD == null ? 'Hasn’t trained yet' : lastD === 0 ? 'Trained today 💪' : `Last trained ${lastD} day${lastD > 1 ? 's' : ''} ago${lastD >= 4 ? ' 😴' : ''}`}</div></div>
+    <div class="row mt" style="align-items:flex-start">${me
+      ? btn('✏️ Edit profile', 'editProfile', 'Change avatar, bio and bodyweight.', 'sm grow') + btn('⚙️ Settings', 'go', 'Notifications, tips, sounds, log out.', 'sm grow', 'data-to="#/settings"')
+      : btn('💬 Message', 'go', 'Opens a private chat.', 'primary sm grow', `data-to="#/chat/${id}"`) + btn('👊 Nudge', 'nudge', 'Tells them to get to the gym.', 'sm grow', `data-id="${id}"`)}</div>
+    <div class="stats mt2">
+      <div class="stat"><div class="v ${rank === 1 ? 'gold' : ''}">${rank ? '#' + rank : '—'}</div><div class="l">Rank</div></div>
+      <div class="stat"><div class="v ${row.gain_pct > 0 ? 'lime' : ''}">${pct(row.gain_pct)}</div><div class="l">All-time gain</div></div>
+      <div class="stat"><div class="v ${wrow.gain_pct > 0 ? 'lime' : wrow.gain_pct < 0 ? 'red' : ''}">${pct(wrow.gain_pct)}</div><div class="l">This week</div></div>
+      <div class="stat"><div class="v">${row.prs || 0}</div><div class="l">PRs</div></div>
+      <div class="stat"><div class="v">${workouts.length}</div><div class="l">Workouts</div></div>
+      <div class="stat"><div class="v">${totalDays}</div><div class="l">Days total</div></div>
+      <div class="stat"><div class="v">${streak}🔥</div><div class="l">Week streak</div></div>
+      <div class="stat"><div class="v" style="font-size:20px">${kg(row.volume || 0)}</div><div class="l">Total volume</div></div>
+    </div>
+    <div class="sec-title"><h2>Badges ${badges.length}/${Object.keys(BADGES).length}</h2></div>
+    <p class="help">Tap any badge to see how to earn it.</p>
+    <div class="badges">${Object.entries(BADGES).map(([k, b]) => `<div class="bdg ${earned[k] ? '' : 'locked'}" data-act="badgeInfo" data-k="${k}" data-earned="${earned[k]?.earned_at || ''}"><span class="e">${b[0]}</span><div class="n">${esc(b[1])}</div></div>`).join('')}</div>
+    <div class="sec-title"><h2>Goals</h2></div>
+    <p class="help">${me ? 'Set a target weight. When you hit it, you get a badge and everyone gets notified.' : `What ${esc(p.username)} is chasing.`}</p>
+    ${goals.map(g => { const cur = bestW(g.exercise), pc = Math.min(100, Math.round(cur / g.target_weight * 100));
+      return `<div class="card ${g.achieved_at ? 'gold' : ''}"><div class="row between"><b>${g.achieved_at ? '✅' : '🎯'} ${esc(g.exercise)} ${kg(g.target_weight)}</b>${me ? `<button class="xbtn" data-act="delGoal" data-id="${g.id}" aria-label="Delete goal">✕</button>` : ''}</div>
+        <div class="progress mt"><i style="width:0" data-w="${g.achieved_at ? 100 : pc}%"></i></div><div class="tiny muted mt">${g.achieved_at ? 'Smashed ' + ago(g.achieved_at) : `Best so far ${kg(cur)} · ${pc}%`}</div></div>`; }).join('') || `<p class="small muted mb">No goals yet.</p>`}
+    ${me ? `<div class="card"><div class="row"><input class="inp" id="gEx" list="exList" placeholder="Exercise"><input class="inp" id="gKg" type="number" inputmode="decimal" placeholder="kg" style="max-width:90px"></div>
+      <datalist id="exList">${EXERCISES.map(e => `<option value="${e}">`).join('')}</datalist>
+      <div class="mt">${btn('🎯 Set goal', 'addGoal', 'Adds a target. Hit that weight in a workout to smash it.', 'primary full')}</div></div>` : ''}
+    <div class="sec-title"><h2>Personal records</h2></div>
+    ${Object.values(prs).length ? `<div class="card">${Object.values(prs).sort((a, b) => b.e1rm - a.e1rm).map(l => `<div class="wk-ex"><span>${esc(l.exercise)}</span><span><b>${+l.weight}kg × ${l.reps}</b> <span class="dim tiny">≈${kg(l.e1rm)} max</span></span></div>`).join('')}</div>` : '<p class="small muted">No lifts logged yet.</p>'}
+    ${chartEx ? `<div class="sec-title"><h2>Progress</h2></div><div class="card"><div class="chip-list mb">${exNames.map(n => `<button class="chip ${n === chartEx ? 'on' : ''}" data-act="chartEx" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+      <svg class="chart" id="chart"></svg><div class="tip mt">Estimated 1-rep max for each session. Tap an exercise above to switch.</div></div>` : ''}
+    <div class="sec-title"><h2>Workout history</h2></div>
+    ${workouts.slice(0, 20).map(w => `<a href="#/workout/${w.id}" class="lrow"><div class="grow"><b>${esc(w.day_name || 'Workout')}</b><div class="tiny muted">${new Date(w.performed_on + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · ${kg(w.total_volume)}</div></div><span>›</span></a>`).join('') || '<p class="small muted">No workouts yet.</p>'}
+    ${me ? `<div class="mt2">${btn('🏠 Gyms', 'go', 'Join a gym crew to get your own mini leaderboard.', 'full', 'data-to="#/gyms"')}</div>` : ''}`;
+}
+A.chartEx = el => { S.chartEx = el.dataset.n; render(); };
+function drawChart(lifts, ex) {
+  const svg = $('#chart'); if (!svg) return;
+  const byDay = {};
+  lifts.filter(l => l.exercise.trim().toLowerCase() === ex.toLowerCase()).forEach(l => {
+    const d = l.created_at.slice(0, 10); byDay[d] = Math.max(byDay[d] || 0, +l.e1rm);
+  });
+  const pts = Object.entries(byDay).sort();
+  const W = svg.clientWidth || 320, H = 170, P = 26;
+  if (pts.length < 2) { svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" fill="#8b95a3" text-anchor="middle" font-size="13">Log ${esc(ex)} again to see a trend</text>`; return; }
+  const vals = pts.map(p => p[1]), mn = Math.min(...vals) * .95, mx = Math.max(...vals) * 1.05;
+  const x = i => P + i * (W - P * 2) / (pts.length - 1), y = v => H - P - (v - mn) / (mx - mn || 1) * (H - P * 2);
+  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join('');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = `<defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#c6ff3d" stop-opacity=".35"/><stop offset="1" stop-color="#c6ff3d" stop-opacity="0"/></linearGradient></defs>
+    <path d="${path} L${x(pts.length - 1)},${H - P} L${x(0)},${H - P}Z" fill="url(#cg)"/>
+    <path d="${path}" fill="none" stroke="#c6ff3d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:2000;stroke-dashoffset:2000;animation:draw 1.4s ease forwards"/>
+    ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p[1])}" r="4" fill="#0b0d10" stroke="#c6ff3d" stroke-width="2"/>`).join('')}
+    <text x="${P}" y="14" fill="#8b95a3" font-size="11">${Math.round(vals[0])}kg</text><text x="${W - P}" y="14" fill="#c6ff3d" font-size="11" text-anchor="end" font-weight="700">${Math.round(vals[vals.length - 1])}kg</text>
+    <style>@keyframes draw{to{stroke-dashoffset:0}}</style>`;
+}
+A.badgeInfo = el => {
+  const b = BADGES[el.dataset.k], got = el.dataset.earned;
+  modal(`<div class="center"><div class="bigbadge" style="${got ? '' : 'filter:grayscale(1) opacity(.4)'}">${b[0]}</div><h2 class="mt">${esc(b[1])}</h2>
+    <p class="muted">${esc(b[2])}</p><p class="mt ${got ? 'lime' : 'dim'}">${got ? 'Unlocked ' + ago(got) + ' 🎉' : 'Locked — go earn it!'}</p>
+    <button class="btn primary full mt2" onclick="closeModal()">Nice</button></div>`);
+};
+A.addGoal = async () => {
+  const ex = $('#gEx').value.trim(), w = parseFloat($('#gKg').value);
+  if (!ex || !(w > 0)) return toast('Enter an exercise and a target weight', '', 'loss');
+  await q(sb.from('goals').insert({ user_id: S.me.id, exercise: ex, target_weight: w }));
+  toast('Goal set 🎯', `${ex} ${kg(w)} — go get it.`, 'goal'); render();
+};
+A.delGoal = async el => { await q(sb.from('goals').delete().eq('id', el.dataset.id)); render(); };
+A.editProfile = () => {
+  const p = S.me; let av = p.avatar;
+  const m = modal(`<h2>Edit profile</h2>
+    <label class="f">Avatar</label><div class="avatars">${AVATARS.map(a => `<button type="button" class="${a === av ? 'on' : ''}" data-a="${a}">${a}</button>`).join('')}</div>
+    <label class="f">Bio</label><textarea class="inp" id="pBio" maxlength="160" placeholder="Bench PR chaser. Leg day skipper.">${esc(p.bio || '')}</textarea>
+    <label class="f">Bodyweight (kg, optional — only shown to you)</label><input class="inp" id="pBw" type="number" inputmode="decimal" value="${esc(p.bodyweight ?? '')}">
+    <div class="mt2">${btn('Save profile', 'saveProfile', 'Updates what everyone sees on your profile.', 'primary full')}</div>`);
+  $$('.avatars button', m).forEach(b => b.onclick = () => { av = b.dataset.a; m.dataset.av = av; $$('.avatars button', m).forEach(x => x.classList.toggle('on', x === b)); });
+  m.dataset.av = av;
+};
+A.saveProfile = async () => {
+  const m = $('#modal .modal');
+  const upd = { avatar: m.dataset.av, bio: $('#pBio').value.trim(), bodyweight: parseFloat($('#pBw').value) || null };
+  await q(sb.from('profiles').update(upd).eq('id', S.me.id));
+  Object.assign(S.me, upd); closeModal(); toast('Profile saved', '', 'pr'); render();
+};
+
+/* ================== GYMS ================== */
+async function viewGyms() {
+  await Promise.all([loadGyms(), loadProfiles()]);
+  const members = id => Object.values(S.profiles).filter(p => p.gym_id === id);
+  return `<a href="#/profile" class="small muted">← Profile</a><h1 class="mt">Gyms</h1>
+    <p class="help mt">Make a crew for your actual gym (or your group chat). Members get their own “My gym” leaderboard. You can be in one gym at a time.</p>
+    ${S.gyms.map(g => { const ms = members(g.id), mine = S.me.gym_id === g.id;
+      return `<div class="card ${mine ? 'hl' : ''}"><div class="row"><div class="av">${esc(g.emoji)}</div><div class="grow"><h3>${esc(g.name)}</h3><div class="tiny muted">${esc(g.location || '')}${g.location ? ' · ' : ''}${ms.length} member${ms.length === 1 ? '' : 's'}</div></div>${mine ? '<span class="pill lime">YOUR GYM</span>' : ''}</div>
+        ${g.description ? `<p class="small muted mt">${esc(g.description)}</p>` : ''}
+        <div class="row wrap mt">${ms.slice(0, 12).map(p => `<a href="#/user/${p.id}" title="${esc(p.username)}">${avatar(p, 'sm')}</a>`).join('')}</div>
+        <div class="mt">${mine ? btn('Leave gym', 'joinGym', 'Removes you from this crew.', 'sm danger', 'data-id=""') : btn('Join gym', 'joinGym', 'Join this crew and compete on its leaderboard.', 'primary sm', `data-id="${g.id}"`)}</div></div>`; }).join('') || '<div class="empty"><span class="e">🏗️</span>No gyms yet. Make the first one!</div>'}
+    <div class="card"><h3>Create a gym</h3>
+      <div class="row mt"><input class="inp" id="gEmoji" value="🏋️" maxlength="4" style="max-width:64px;text-align:center"><input class="inp" id="gName" placeholder="Gym name" maxlength="40"></div>
+      <input class="inp mt" id="gLoc" placeholder="Location (optional)"><input class="inp mt" id="gDesc" placeholder="Description (optional)">
+      <div class="mt">${btn('Create & join', 'createGym', 'Creates the gym and puts you in it.', 'primary full')}</div></div>`;
+}
+A.joinGym = async el => {
+  const id = el.dataset.id || null;
+  await q(sb.from('profiles').update({ gym_id: id }).eq('id', S.me.id));
+  S.me.gym_id = id; toast(id ? 'Joined gym 🏠' : 'Left gym', '', id ? 'pr' : ''); render();
+};
+A.createGym = async () => {
+  const name = $('#gName').value.trim(); if (name.length < 2) return toast('Give your gym a name', '', 'loss');
+  const g = await q(sb.from('gyms').insert({ name, emoji: $('#gEmoji').value.trim() || '🏋️', location: $('#gLoc').value.trim(), description: $('#gDesc').value.trim(), owner_id: S.me.id }).select().single());
+  await q(sb.from('profiles').update({ gym_id: g.id }).eq('id', S.me.id));
+  S.me.gym_id = g.id; boom(.5); toast('Gym created!', 'Invite your mates.', 'pr'); render();
+};
+
+/* ================== SETTINGS ================== */
+async function viewSettings() {
+  const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  return `<a href="#/profile" class="small muted">← Profile</a><h1 class="mt">Settings</h1>
+    <div class="card"><h3>🔔 Notifications</h3>
+      <p class="small muted mt">Status: <b class="${S.pushOn ? 'lime' : 'red'}">${S.pushOn ? 'Push ON' : perm === 'denied' ? 'Blocked in browser settings' : 'Off'}</b></p>
+      <p class="tiny muted mt">You’ll be told when: someone PRs, takes #1, goes backwards, is dead last, smashes a goal, hasn’t trained in a week, messages, comments, reacts or nudges you — plus weekly results every Monday.</p>
+      <div class="row mt" style="align-items:flex-start">${S.pushOn ? btn('Send test', 'testPush', 'Sends a test notification to this device.', 'sm grow') + btn('Turn off', 'pushOff', 'Stops push on this device.', 'sm danger grow')
+        : btn('Turn on notifications', 'enablePush', 'Allow alerts even when the app is closed.', 'primary grow')}</div></div>
+    <div class="card"><h3>📲 Install the app</h3><p class="small muted mt">${isIOS() ? 'In Safari tap Share ⬆️ → Add to Home Screen. Needed for notifications on iPhone.' : 'In Chrome tap ⋮ → Install app / Add to Home screen. It’ll open full-screen like a real app.'}</p></div>
+    <div class="card"><h3>Preferences</h3>
+      ${toggleRow('Show button tips', 'tips', 'The little grey explanations under buttons.')}
+      ${toggleRow('Sounds', 'sound', 'Fanfare for PRs, sad trombone for losses.')}
+      <label class="f">Rest timer after each set</label>
+      <div class="seg">${[60, 90, 120, 180].map(s => `<button class="${prefs.rest === s ? 'on' : ''}" data-act="setRest" data-s="${s}">${s < 120 ? s + 's' : s / 60 + 'm'}</button>`).join('')}</div>
+      <div class="tip mt">Starts automatically when you tick a set.</div></div>
+    <div class="card"><h3>Account</h3><p class="small muted mt">Logged in as <b>${esc(S.me.username)}</b>. Keep your password safe — there’s no email reset.</p>
+      <div class="mt">${btn('Log out', 'logout', 'Signs you out on this device.', 'danger full')}</div></div>`;
+}
+function toggleRow(label, key, tip) {
+  return `<div class="row between mt"><div><b class="small">${label}</b><div class="tip">${tip}</div></div><button class="btn sm ${prefs[key] ? 'primary' : ''}" data-act="togglePref" data-k="${key}">${prefs[key] ? 'ON' : 'OFF'}</button></div>`;
+}
+A.togglePref = el => { prefs[el.dataset.k] = !prefs[el.dataset.k]; lsSet('lb_prefs', prefs); render(); };
+A.setRest = el => { prefs.rest = +el.dataset.s; lsSet('lb_prefs', prefs); render(); };
+A.pushOff = async () => { await disablePush(); toast('Push turned off'); render(); };
+
+/* ================== BOOT ================== */
+async function boot(session) {
+  S.session = session;
+  if (!session) { S.me = null; if (S.channel) { sb.removeChannel(S.channel); S.channel = null; } render(); return; }
+  try {
+    await Promise.all([loadProfiles(), loadSplits(), loadGyms()]);
+    if (!S.me) { await new Promise(r => setTimeout(r, 800)); await loadProfiles(); }
+    if (!S.me) throw new Error('Profile not found');
+    subscribeRealtime();
+    registerSW().then(() => { if (location.hash === '#/' || !location.hash) render(); });
+    refreshCounts();
+    sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', S.me.id).then(() => {});
+  } catch (e) { toast('Couldn’t load your account', e.message, 'loss'); }
+  render();
+}
+let booted = false;
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+    if (event === 'SIGNED_IN' && booted && S.session?.user.id === session?.user.id) return;
+    booted = true; setTimeout(() => boot(session), 0);
+  }
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) refreshCounts(); });
+</script>
+</body>
+</html>
