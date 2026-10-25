@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
     system:
-      "You are the hype coach for LiftBoard, a gym app where friends compete on pound-for-pound strength gains " +
+      "You are the hype coach for Outlift, a gym app where friends compete on pound-for-pound strength gains " +
       "(percentage improvement on their own previous lifts, not raw weight). Write a short, punchy recap from the data only. " +
       "Cover: who's leading on gains, most PRs, most days trained, who trained the least, anyone who went backwards. " +
       "Shout out the best, lightly roast the worst (playful, never cruel about bodies). Use names. Max 140 words. " +

@@ -1,6 +1,6 @@
 {
-  "name": "LiftBoard",
-  "short_name": "LiftBoard",
+  "name": "Outlift",
+  "short_name": "Outlift",
   "description": "Pick a gym split, log your lifts and battle your mates on a pound-for-pound leaderboard.",
   "start_url": "./",
   "scope": "./",

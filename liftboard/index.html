@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>LiftBoard</title>
+<title>Outlift</title>
 <meta name="description" content="Pick a gym split, log your lifts and battle your mates on a pound-for-pound leaderboard.">
 <meta name="theme-color" content="#f7f6f2">
 <link rel="manifest" href="manifest.webmanifest">
@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="LiftBoard">
+<meta name="apple-mobile-web-app-title" content="Outlift">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -262,7 +262,7 @@ svg.chart{width:100%;height:180px;display:block}
 </head>
 <body class="noauth">
 <header class="top hidden" id="top">
-  <a href="#/" class="logo">LIFT<b>BOARD</b></a>
+  <a href="#/" class="logo">OUT<b>LIFT</b></a>
   <div class="row">
     <a href="#/social/chats" class="iconbtn" id="chatBtn" title="Messages" aria-label="Messages">💬<span class="dot hidden" id="msgDot"></span></a>
     <a href="#/notifications" class="iconbtn" id="bellBtn" title="Notifications" aria-label="Notifications">🔔<span class="dot hidden" id="bellDot"></span></a>
@@ -477,7 +477,7 @@ async function refreshCounts() {
 function paintCounts() {
   const set = (id, n) => { const d = $(id); if (!d) return; d.textContent = n > 99 ? '99+' : n; d.classList.toggle('hidden', !n); };
   set('#bellDot', S.unread); set('#msgDot', S.unreadMsgs); set('#navMsgDot', S.unreadMsgs);
-  document.title = (S.unread ? `(${S.unread}) ` : '') + 'LiftBoard';
+  document.title = (S.unread ? `(${S.unread}) ` : '') + 'Outlift';
   try { S.unread ? navigator.setAppBadge?.(S.unread) : navigator.clearAppBadge?.(); } catch {}
 }
 function onNotification(n) {
@@ -526,7 +526,7 @@ async function enablePush() {
       <ol class="mt" style="padding-left:20px;line-height:1.9">
         <li>Tap the <b>Share</b> button <span class="pill">⬆️</span> in Safari</li>
         <li>Tap <b>Add to Home Screen</b></li>
-        <li>Open LiftBoard from your Home Screen</li>
+        <li>Open Outlift from your Home Screen</li>
         <li>Come back here and tap <b>Turn on notifications</b></li>
       </ol>
       <button class="btn primary full mt" onclick="closeModal()">Got it</button>`);
@@ -634,7 +634,7 @@ let authMode = 'signup', pickedAvatar = AVATARS[Math.floor(Math.random() * 8)];
 function viewAuth() {
   const su = authMode === 'signup';
   return `<div class="auth view-in">
-    <div class="hero-logo">LIFT<b>BOARD</b></div>
+    <div class="hero-logo">OUT<b>LIFT</b></div>
     <p class="muted" style="font-size:16px;margin-top:8px">Pick a split. Log your lifts. Beat your mates <b class="lime">pound for pound</b>.</p>
     <div class="feat">
       <div><b>🏆 Fair leaderboard</b>Ranked on how much YOU improve, not who’s biggest.</div>
@@ -973,7 +973,7 @@ async function viewSplits() {
   const tab = S.splitTab;
   const list = S.splits.filter(s => tab === 'ready' ? !s.owner_id : tab === 'mine' ? s.owner_id === S.me.id : s.owner_id && s.owner_id !== S.me.id);
   const welcome = S.welcome; S.welcome = false;
-  return `${welcome ? `<div class="card hl"><h2>Welcome to LiftBoard ${esc(S.me.avatar)}</h2><p class="small muted">Step 1: pick a split to follow. Hit <b>Follow</b> on any card below. Don’t overthink it — you can switch whenever.</p></div>` : ''}
+  return `${welcome ? `<div class="card hl"><h2>Welcome to Outlift ${esc(S.me.avatar)}</h2><p class="small muted">Step 1: pick a split to follow. Hit <b>Follow</b> on any card below. Don’t overthink it — you can switch whenever.</p></div>` : ''}
     <h1>Gym splits</h1><p class="help mt">A split is your weekly plan — which muscles you train on which day. Follow one, copy one to tweak it, or build your own. Everyone can see every split.</p>
     <div class="seg mb">
       <button class="${tab === 'ready' ? 'on' : ''}" data-act="splitTab" data-t="ready">Ready-made</button>
@@ -987,7 +987,7 @@ function splitCard(s, f, i = 0) {
   const mine = S.me.active_split_id === s.id;
   return `<div class="card ${mine ? 'hl' : TINTS[i % TINTS.length]}">
     <div class="row between"><div class="grow"><h3 style="font-size:18px">${esc(s.name)}</h3>
-      <div class="tiny muted">${s.owner_id ? 'by @' + esc(prof(s.owner_id).username) : 'LiftBoard original'} · ${esc(s.level || 'Any')} · ${s.days.length} days · 👥 ${f} following</div></div>
+      <div class="tiny muted">${s.owner_id ? 'by @' + esc(prof(s.owner_id).username) : 'Outlift original'} · ${esc(s.level || 'Any')} · ${s.days.length} days · 👥 ${f} following</div></div>
       ${mine ? '<span class="pill lime">FOLLOWING</span>' : ''}</div>
     <p class="small muted mt">${esc(s.description || '')}</p>
     <div class="chip-list mt">${s.days.map(d => `<span class="chip">${esc(d.name)}</span>`).join('')}</div>
@@ -1012,7 +1012,7 @@ async function viewSplit(id) {
   const followers = Object.values(S.profiles).filter(p => p.active_split_id === id);
   const mine = s.owner_id === S.me.id, following = S.me.active_split_id === id;
   return `<a href="#/splits" class="small muted">← All splits</a>
-    <h1 class="mt">${esc(s.name)}</h1><div class="small muted">${s.owner_id ? 'by ' + userLink(s.owner_id) : 'LiftBoard original'} · ${esc(s.level || '')}</div>
+    <h1 class="mt">${esc(s.name)}</h1><div class="small muted">${s.owner_id ? 'by ' + userLink(s.owner_id) : 'Outlift original'} · ${esc(s.level || '')}</div>
     <p class="mt">${esc(s.description || '')}</p>
     <div class="row mt wrap" style="align-items:flex-start">
       ${following ? btn('✓ Following', 'noop', 'This is your current plan.', 'grow', 'disabled') : btn('Follow this split', 'follow', 'Makes it your plan.', 'primary grow', `data-id="${id}"`)}
@@ -1067,7 +1067,7 @@ async function viewSplitEdit(id) {
   if (!S.draft) S.draft = { id: null, name: '', description: '', level: 'Any', days: [{ name: 'Day 1', focus: '', exercises: [{ name: '', sets: 3, reps: '8-12' }] }] };
   const d = S.draft;
   return `<a href="#/splits" class="small muted">← Back</a><h1 class="mt">${d.id ? 'Edit split' : 'Build your split'}</h1>
-    <p class="help mt">Give it a name, add your training days, then the exercises for each day. Everyone on LiftBoard will be able to see and follow it.</p>
+    <p class="help mt">Give it a name, add your training days, then the exercises for each day. Everyone on Outlift will be able to see and follow it.</p>
     <div class="card"><label class="f" style="margin-top:0">Split name</label><input class="inp" data-dbind="name" value="${esc(d.name)}" placeholder="e.g. Summer Shred 4-Day" maxlength="60">
       <label class="f">Short description</label><textarea class="inp" data-dbind="description" placeholder="Who is it for? How many days a week?">${esc(d.description)}</textarea>
       <label class="f">Level</label><select class="inp" data-dbind="level">${['Any', 'Beginner', 'Intermediate', 'Advanced'].map(l => `<option ${l === d.level ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
@@ -1252,7 +1252,7 @@ async function peopleList() {
   const people = Object.values(S.profiles).filter(p => p.id !== S.me.id).sort((a, b) => (byId[b.id]?.days || 0) - (byId[a.id]?.days || 0));
   if (!people.length) return `<div class="empty"><span class="e">🫥</span>It’s just you so far. Send the link to your mates!</div>
     ${btn('Copy invite link', 'invite', 'Copies the app link so you can send it to friends.', 'primary full')}`;
-  return `<div class="tiny muted mb">${people.length + 1} real people on LiftBoard (including you). No bots. Ever.</div>
+  return `<div class="tiny muted mb">${people.length + 1} real people on Outlift (including you). No bots. Ever.</div>
     ${people.map(p => { const r = byId[p.id] || {}; const d = daysSince(r.last_workout);
       return `<div class="card"><a href="#/user/${p.id}" class="row">${avatar(p)}<div class="grow"><b>${esc(p.username)}</b><div class="tiny muted">${r.days || 0} days trained · ${d == null ? 'never trained' : d === 0 ? 'trained today 💪' : `last trained ${d}d ago`}</div></div><span class="${r.gain_pct > 0 ? 'lime' : 'muted'} display" style="font-size:22px">${pct(r.gain_pct)}</span></a>
       <div class="row mt" style="align-items:flex-start">${btn('💬 Message', 'go', 'Opens a private chat.', 'sm grow', `data-to="#/chat/${p.id}"`)}${btn('👊 Nudge', 'nudge', 'Sends them a “get to the gym” notification.', 'sm grow', `data-id="${p.id}"`)}</div></div>`; }).join('')}
@@ -1265,7 +1265,7 @@ A.nudge = async el => {
 };
 A.invite = async () => {
   const url = location.origin + location.pathname;
-  try { if (navigator.share) await navigator.share({ title: 'LiftBoard', text: 'Come lift with me on LiftBoard 🏋️', url }); else { await navigator.clipboard.writeText(url); toast('Link copied!', url, 'pr'); } }
+  try { if (navigator.share) await navigator.share({ title: 'Outlift', text: 'Come lift with me on Outlift 🏋️', url }); else { await navigator.clipboard.writeText(url); toast('Link copied!', url, 'pr'); } }
   catch { toast('Here’s the link', url); }
 };
 async function chatList() {

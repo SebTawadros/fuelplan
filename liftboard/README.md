@@ -1,4 +1,4 @@
-# LiftBoard
+# Outlift
 
 Gym split tracker with accounts, a pound-for-pound leaderboard, comments, chat, badges, goals and push notifications.
 
