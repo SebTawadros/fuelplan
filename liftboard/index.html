@@ -190,7 +190,8 @@ textarea.inp{min-height:80px;resize:vertical}
 .xbtn{border:none;background:none;color:var(--dim);font-size:18px;cursor:pointer;padding:4px 8px}
 .ex-card:nth-of-type(5n+1){border-left:4px solid var(--blue)} .ex-card:nth-of-type(5n+2){border-left:4px solid var(--orange)}
 .ex-card:nth-of-type(5n+3){border-left:4px solid var(--purple)} .ex-card:nth-of-type(5n+4){border-left:4px solid var(--teal)} .ex-card:nth-of-type(5n+5){border-left:4px solid var(--pink)}
-.resttimer{white-space:nowrap;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px);z-index:45;background:var(--text);color:#fff;font-weight:600;border-radius:99px;padding:11px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 12px 30px -8px rgba(0,0,0,.35);animation:viewIn .3s}
+.resttimer{white-space:nowrap;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px);z-index:45;background:var(--text);color:#fff;font-weight:600;border-radius:99px;padding:11px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 12px 30px -8px rgba(0,0,0,.35);animation:restIn .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes restIn{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
 .resttimer button{border:none;background:rgba(255,255,255,.16);color:#fff;border-radius:99px;padding:5px 11px;font-weight:600;cursor:pointer}
 
 /* toasts */
@@ -947,23 +948,28 @@ A.goBoard = () => { closeModal(); location.hash = '#/leaderboard'; };
 /* rest timer */
 let restT = null;
 function startRest(sec) {
-  stopRest();
-  const end = Date.now() + sec * 1000;
-  const slot = $('#restSlot');
-  const paint = () => {
-    const left = Math.max(0, Math.round((end - Date.now()) / 1000));
-    slot.innerHTML = `<div class="resttimer">⏳ Rest ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}<button data-act="restAdd">+15s</button><button data-act="restSkip">Skip</button></div>`;
-    if (left <= 0) {
-      stopRest(); sound('rest'); buzz([200, 100, 200, 100, 400]); toast('Rest over — next set! 💪', '', 'pr', null, 2500);
-      if (document.hidden && window.Notification?.permission === 'granted' && S.swReg) S.swReg.showNotification('Rest over — next set! 💪', { icon: 'icon-192.png', tag: 'rest' });
-    }
-  };
-  restT = { end, iv: setInterval(paint, 500) };
-  paint();
+  // Build the pill once and only update its text, so it doesn't re-animate (flicker) every tick.
+  if (!restT) {
+    $('#restSlot').innerHTML = `<div class="resttimer">⏳ Rest <span id="restLeft" style="font-variant-numeric:tabular-nums"></span><button data-act="restAdd">+15s</button><button data-act="restSkip">Skip</button></div>`;
+    restT = { end: 0, iv: setInterval(paintRest, 250) };
+  }
+  restT.end = Date.now() + sec * 1000;
+  paintRest();
+}
+function paintRest() {
+  if (!restT) return;
+  const left = Math.max(0, Math.ceil((restT.end - Date.now()) / 1000));
+  const el = $('#restLeft');
+  const txt = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  if (el && el.textContent !== txt) el.textContent = txt;
+  if (left <= 0) {
+    stopRest(); sound('rest'); buzz([200, 100, 200, 100, 400]); toast('Rest over — next set! 💪', '', 'pr', null, 2500);
+    if (document.hidden && window.Notification?.permission === 'granted' && S.swReg) S.swReg.showNotification('Rest over — next set! 💪', { icon: 'icon-192.png', tag: 'rest' });
+  }
 }
 function stopRest() { if (restT) clearInterval(restT.iv); restT = null; $('#restSlot').innerHTML = ''; }
 A.restSkip = () => stopRest();
-A.restAdd = () => { if (restT) startRest(Math.round((restT.end - Date.now()) / 1000) + 15); };
+A.restAdd = () => { if (restT) { restT.end += 15000; paintRest(); } };
 
 /* ================== SPLITS ================== */
 async function viewSplits() {
