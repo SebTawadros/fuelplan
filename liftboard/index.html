@@ -329,7 +329,7 @@ const S = {
   unread: 0, unreadMsgs: 0, myLifts: null, myWorkouts: null,
   active: lsGet('lb_active', null), draft: null, welcome: false,
   board: { period: lsGet('lb_period', 'week'), scope: 'all' },
-  feedTab: 'feed', splitTab: 'ready', pushOn: false, swReg: null, channel: null,
+  feedTab: 'feed', splitTab: 'ready', pushOn: false, swReg: null, channel: null, isAdmin: false,
 };
 const prefs = Object.assign({ tips: true, sound: true, rest: 90 }, lsGet('lb_prefs', {}));
 
@@ -655,6 +655,7 @@ function viewAuth() {
       ${su ? `<label class="f">Pick your avatar</label><div class="avatars">${AVATARS.map(a => `<button type="button" class="${a === pickedAvatar ? 'on' : ''}" data-act="pickAvatar" data-a="${a}">${a}</button>`).join('')}</div>` : ''}
       <div class="mt2">${su ? btn('Create my account 🚀', 'signup', 'Free forever. No email needed — just remember your username and password.', 'primary big', 'type="submit"')
                             : btn('Log in', 'login', 'Welcome back. Use the username and password you signed up with.', 'primary big', 'type="submit"')}</div>
+      ${su ? '' : `<div class="mt center">${btn('Forgot password?', 'forgotPw', 'Shows who can set you a new one — no need to make a new account.', 'ghost sm')}</div>`}
     </form>
     <p class="tiny dim center mt2">Real people only. No bots. If there are 5 users, there are 5 users.</p>
   </div>`;
@@ -683,6 +684,40 @@ A.login = async el => {
   el.disabled = true; el.textContent = 'Logging in…';
   const { error } = await sb.auth.signInWithPassword({ email: emailFor(username), password });
   if (error) { toast('Login failed', 'Wrong username or password.', 'loss'); el.disabled = false; el.textContent = 'Log in'; $('.auth')?.classList.add('shake'); }
+};
+A.forgotPw = async () => {
+  let owners = [];
+  try { owners = (await sb.rpc('app_owners')).data || []; } catch {}
+  const who = owners.length ? owners.map(o => `<b>${esc(o)}</b>`).join(' or ') : 'the app owner';
+  modal(`<h2>Forgot your password?</h2>
+    <p class="muted mt">No stress — don’t make a new account, you’ll lose your workouts and badges.</p>
+    <div class="card blue mt"><b>Message ${who}</b><p class="small muted mt">Tell them your username. They can set you a new password in seconds, and everything you’ve logged stays put.</p></div>
+    <button class="btn primary full" onclick="closeModal()">Got it</button>`);
+};
+A.changePw = async el => {
+  const pw = $('#myPw').value;
+  if (pw.length < 6) return toast('Password must be at least 6 characters', '', 'loss');
+  el.disabled = true;
+  const { error } = await sb.auth.updateUser({ password: pw });
+  el.disabled = false;
+  if (error) return toast('Couldn’t change password', error.message, 'loss');
+  $('#myPw').value = ''; toast('Password changed 🔒', 'Use it next time you log in.', 'pr');
+};
+A.adminReset = async el => {
+  const username = $('#rsUser').value.trim(), password = $('#rsPw').value;
+  if (!username) return toast('Enter their username', '', 'loss');
+  if (password.length < 6) return toast('New password must be at least 6 characters', '', 'loss');
+  if (!await confirmBox('Reset password?', `${username}’s old password will stop working. Their new password will be: ${password}`, 'Reset it')) return;
+  el.disabled = true;
+  const { data, error } = await sb.functions.invoke('admin-reset', { body: { username, password } });
+  el.disabled = false;
+  if (error) {
+    let msg = error.message;
+    try { msg = (await error.context.json()).error || msg; } catch {}
+    return toast('Couldn’t reset password', msg, 'loss');
+  }
+  $('#rsUser').value = ''; $('#rsPw').value = '';
+  toast(`Password reset for ${data.username} 🔑`, 'Tell them their new password.', 'pr', null, 6000);
 };
 A.logout = async () => {
   if (!await confirmBox('Log out?', 'You’ll stop getting notifications on this device.', 'Log out')) return;
@@ -1496,8 +1531,19 @@ async function viewSettings() {
       <label class="f">Rest timer after each set</label>
       <div class="seg">${[60, 90, 120, 180].map(s => `<button class="${prefs.rest === s ? 'on' : ''}" data-act="setRest" data-s="${s}">${s < 120 ? s + 's' : s / 60 + 'm'}</button>`).join('')}</div>
       <div class="tip mt">Starts automatically when you tick a set.</div></div>
-    <div class="card"><h3>Account</h3><p class="small muted mt">Logged in as <b>${esc(S.me.username)}</b>. Keep your password safe — there’s no email reset.</p>
-      <div class="mt">${btn('Log out', 'logout', 'Signs you out on this device.', 'danger full')}</div></div>`;
+    <div class="card"><h3>Account</h3><p class="small muted mt">Logged in as <b>${esc(S.me.username)}</b>.${S.isAdmin ? ' You’re the <b>app owner</b>.' : ''}</p>
+      <label class="f">Change my password</label>
+      <input class="inp" id="myPw" type="password" autocomplete="new-password" placeholder="New password (6+ characters)">
+      <div class="mt">${btn('Save new password', 'changePw', 'Use it next time you log in on any device.', 'full')}</div>
+      <div class="mt">${btn('Log out', 'logout', 'Signs you out on this device.', 'danger full')}</div></div>
+    ${S.isAdmin ? `<div class="card purple"><h3>🔑 Reset someone’s password</h3>
+      <p class="small muted mt">Only you see this. If a friend forgets their password, set a new one here and tell them what it is. They get a notification and can change it in Settings.</p>
+      <label class="f">Their username</label>
+      <input class="inp" id="rsUser" list="userList" autocapitalize="off" placeholder="e.g. eve_tawadros">
+      <datalist id="userList">${Object.values(S.profiles).map(p => `<option value="${esc(p.username)}">`).join('')}</datalist>
+      <label class="f">New password for them</label>
+      <input class="inp" id="rsPw" autocomplete="off" placeholder="6+ characters">
+      <div class="mt">${btn('Reset their password', 'adminReset', 'Their old password stops working straight away.', 'primary full')}</div></div>` : ''}`;
 }
 function toggleRow(label, key, tip) {
   return `<div class="row between mt"><div><b class="small">${label}</b><div class="tip">${tip}</div></div><button class="btn sm ${prefs[key] ? 'primary' : ''}" data-act="togglePref" data-k="${key}">${prefs[key] ? 'ON' : 'OFF'}</button></div>`;
@@ -1515,6 +1561,7 @@ async function boot(session) {
     if (!S.me) { await new Promise(r => setTimeout(r, 800)); await loadProfiles(); }
     if (!S.me) throw new Error('Profile not found');
     subscribeRealtime();
+    sb.from('admins').select('user_id').eq('user_id', S.me.id).maybeSingle().then(({ data }) => { S.isAdmin = !!data; });
     registerSW().then(() => { if (location.hash === '#/' || !location.hash) render(); });
     refreshCounts();
     sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', S.me.id).then(() => {});
