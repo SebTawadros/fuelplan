@@ -283,6 +283,13 @@ button.pod{background:none;border:none;text-align:center}
 .tile:active{transform:scale(.96)}
 .t-blue{background:var(--t-blue)} .t-purple{background:var(--t-purple)} .t-gold{background:var(--t-gold)} .t-pink{background:var(--t-pink)}
 #coachBtn{background:var(--t-purple);border-color:#e1d6fb}
+.t-teal{background:var(--t-teal)} .t-orange{background:var(--t-orange)}
+.act-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.act-btn{border:1px solid var(--line);background:var(--card);border-radius:18px;padding:14px 6px;font:inherit;font-size:14px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text);transition:transform .12s;box-shadow:var(--shadow)}
+.act-btn span{font-size:30px} .act-btn:active{transform:scale(.94)}
+.act-btn:nth-child(6n+1){background:var(--t-blue)} .act-btn:nth-child(6n+2){background:var(--t-teal)} .act-btn:nth-child(6n+3){background:var(--t-orange)}
+.act-btn:nth-child(6n+4){background:var(--t-green)} .act-btn:nth-child(6n+5){background:var(--t-purple)} .act-btn:nth-child(6n+6){background:var(--t-pink)}
+.act-ic{width:52px;height:52px;border-radius:16px;background:var(--t-teal);display:grid;place-items:center;font-size:28px;flex-shrink:0}
 .sticky-finish{position:sticky;bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 10px);z-index:20;margin-top:10px}
 .sticky-finish .tip{background:var(--bg);border-radius:8px;padding:2px 6px}
 
@@ -677,6 +684,7 @@ async function render() {
     app.innerHTML = html;
     if (!same) { app.classList.remove('view-in'); void app.offsetWidth; app.classList.add('view-in'); window.scrollTo(0, 0); }
     after.forEach(f => f()); after = [];
+    if (S.scrollTo) { document.getElementById(S.scrollTo)?.scrollIntoView({ behavior: 'smooth' }); S.scrollTo = null; }
     if (S.pendingEx && !hash.startsWith('#/x/')) { const p = S.pendingEx; S.pendingEx = null; openExercise(p.name, p.opts); }
   } catch (e) {
     if (seq !== renderSeq) return;
@@ -703,6 +711,7 @@ document.addEventListener('click', async e => {
   try { await fn(el, e); } catch (err) { console.error(err); toast('Oops', err.message, 'loss'); }
 });
 A.reload = () => render();
+A.goCardio = () => { S.scrollTo = 'cardio'; if (location.hash === '#/train') render(); else location.hash = '#/train'; };
 A.enablePush = () => enablePush();
 A.go = el => { location.hash = el.dataset.to; };
 
@@ -810,13 +819,16 @@ function nextDay(split, workouts) {
   return (i + 1) % split.days.length;
 }
 async function viewHome() {
-  const [workouts, board, feed, recap, plans] = await Promise.all([
+  const [workouts, board, feed, recap, plans, acts] = await Promise.all([
     ensureMyWorkouts(true),
     points('public', weekAgoISO()),
     q(sb.from('workouts').select('id,user_id,day_name,total_volume,created_at').eq('finished', true).order('created_at', { ascending: false }).limit(6)),
     sb.from('recaps').select('*').is('group_id', null).order('created_at', { ascending: false }).limit(1).maybeSingle().then(r => r.data),
     q(sb.from('assignments').select('*').eq('client_id', S.me.id).eq('status', 'new').order('created_at', { ascending: false })),
+    q(sb.from('activities').select('*').order('created_at', { ascending: false }).limit(6)),
   ]);
+  const live = [...feed.map(w => ({ t: 'w', at: w.created_at, w })), ...acts.map(a => ({ t: 'a', at: a.created_at, a }))]
+    .sort((x, y) => new Date(y.at) - new Date(x.at)).slice(0, 8);
   const me = S.me, split = S.splits.find(s => s.id === me.active_split_id);
   const ranked = board.filter(r => r.points > 0);
   const myRow = board.find(r => r.user_id === me.id);
@@ -854,6 +866,8 @@ async function viewHome() {
       <button class="tile t-purple" data-act="go" data-to="#/coach"><span>🤖</span>Ask coach</button>
       <button class="tile t-gold" data-act="go" data-to="#/leaderboard"><span>🏆</span>Leaderboard</button>
       <button class="tile t-pink" data-act="go" data-to="#/groups"><span>👥</span>Groups</button>
+      <button class="tile t-teal" data-act="goCardio"><span>🏃</span>Log cardio</button>
+      <button class="tile t-orange" data-act="logAct" data-k="sauna"><span>🧖</span>Log sauna</button>
     </div>
     <div class="stats mb">
       <div class="stat"><div class="v" data-count="${workouts.length}">0</div><div class="l">Workouts</div></div>
@@ -865,7 +879,9 @@ async function viewHome() {
     ${recapCard(recap)}
     <div class="sec-title"><h2>Live feed</h2><a href="#/social" class="small lime">See all →</a></div>
     <p class="help">Workouts from everyone you can see. Tap one to react or comment.</p>
-    ${feed.length ? feed.map(w => `<a href="#/workout/${w.id}" class="lrow">${avatar(prof(w.user_id))}<div class="grow"><b>${esc(prof(w.user_id).username)}</b> <span class="muted">finished</span> ${esc(w.day_name || 'a workout')}<div class="tiny muted">${ago(w.created_at)} · ${kg(w.total_volume)} moved</div></div><span>›</span></a>`).join('')
+    ${live.length ? live.map(x => x.t === 'w'
+        ? `<a href="#/workout/${x.w.id}" class="lrow">${avatar(prof(x.w.user_id))}<div class="grow"><b>${esc(prof(x.w.user_id).username)}</b> <span class="muted">finished</span> ${esc(x.w.day_name || 'a workout')}<div class="tiny muted">${ago(x.w.created_at)} · 🏋️ gym session</div></div><span>›</span></a>`
+        : `<a href="#/user/${x.a.user_id}" class="lrow">${avatar(prof(x.a.user_id))}<div class="grow"><b>${esc(prof(x.a.user_id).username)}</b> <span class="muted">logged</span> ${(ACTS[x.a.kind] || ACTS.other)[0]} ${esc((ACTS[x.a.kind] || ACTS.other)[1])}<div class="tiny muted">${ago(x.a.created_at)} · ${actLine(x.a)}</div></div><span>›</span></a>`).join('')
       : `<div class="empty"><span class="e">🦗</span>No workouts yet. Be the first — everyone will get notified.</div>`}
   `;
 }
@@ -913,6 +929,7 @@ async function viewTrain() {
         <div class="mt">${btn('Start ' + esc(d.name), 'startDay', 'Loads these exercises into the workout logger.', i === nd ? 'primary full' : 'full', `data-split="${split.id}" data-day="${i}"`)}</div></div>`).join('')}`
       : `<div class="card hl"><h3>No split yet</h3><p class="small muted mb">Follow a split to get your days laid out here.</p>${btn('Choose a split', 'go', 'Browse ready-made and community splits.', 'primary full', 'data-to="#/splits"')}</div>`}
     <div class="card">${btn('➕ Quick empty workout', 'startEmpty', 'Starts a blank session — add whatever exercises you’re doing today.', 'full')}</div>
+    ${activityPanel()}
     <div class="card">${btn('📚 Browse all splits', 'go', 'Ready-made splits, community splits, and your own.', 'full', 'data-to="#/splits"')}</div>
     <div class="sec-title"><h2>Gym tools</h2></div>
     <div class="card purple">${btn('🔳 QR codes for gym machines', 'go', 'Print codes to stick on machines. Scanning one shows how to use it and logs it.', 'full', 'data-to="#/qr"')}</div>
@@ -1245,16 +1262,19 @@ A.saveSplit = async el => {
 
 /* ================== LEADERBOARD ================== */
 const POINT_RULES = [
-  ['show_pts', '📅', 'Showing up', '15 per day you train'],
-  ['pr_pts', '🔥', 'PRs', '10 + your % jump (up to +20 bonus) for every new best'],
-  ['work_pts', '🏗️', 'Hard work', '2 per 1,000kg you move'],
+  ['show_pts', '📅', 'Showing up', '15 per day you train (gym or cardio)'],
+  ['pr_pts', '🔥', 'PRs', '10 + your % jump (up to +20 bonus) for every new best lift, 10 for your longest run/swim/ride'],
+  ['cardio_pts', '🏃', 'Cardio', 'Minutes × effort: easy 0.2, moderate 0.35, hard 0.5 per minute (max 40 a session)'],
+  ['recovery_pts', '🧖', 'Recovery', 'Sauna or ice bath: 0.15 per minute (max 10)'],
   ['sets_pts', '✅', 'Sets smashed', '1 per set where you hit your target reps'],
   ['variety_pts', '🧪', 'Variety', '5 for each new exercise you try'],
   ['consistency_pts', '📆', 'Consistency', '25 for every week with 3+ training days'],
   ['goal_pts', '🎯', 'Goals', '30 for every goal you smash'],
   ['hype_pts', '📣', 'Team spirit', '1 per reaction or comment you give (max 20)'],
   ['drop_pts', '📉', 'Going backwards', '−5 when a lift drops more than 5% below your best'],
+  ['missed_pts', '🛋️', 'Days off', '4 rest days a week are free. Every extra day with nothing logged is −20'],
 ];
+const NEG = new Set(['drop_pts', 'missed_pts']);
 const points = (scope, since, group) => q(sb.rpc('leaderboard_points', { p_since: since, p_scope: scope, p_group: group || null }));
 async function myGroups() {
   const rows = await q(sb.from('group_members').select('role,gyms(*)').eq('user_id', S.me.id));
@@ -1301,7 +1321,7 @@ function boardHeader(groups) {
 function lrow(r, rank, i) {
   const me = r.user_id === S.me.id;
   return `<button class="lrow ${me ? 'me' : ''}" style="animation-delay:${i * 40}ms" data-act="ptsInfo" data-u="${r.user_id}"><div class="rk">${rank}</div>${avatar(r)}
-    <div class="grow"><b>${esc(r.username)}${me ? ' (you)' : ''}</b><div class="tiny muted">${r.days} days · ${r.prs} PRs · ${kg(r.volume)}${r.drops ? ` · <span class="red">${r.drops} drop${r.drops === 1 ? '' : 's'}</span>` : ''}</div></div>
+    <div class="grow"><b>${esc(r.username)}${me ? ' (you)' : ''}</b><div class="tiny muted">${r.days} active days · ${r.prs} PRs${r.cardio_min ? ` · ${r.cardio_min} min cardio` : ''}${r.missed_days ? ` · <span class="red">${r.missed_days} missed</span>` : ''}</div></div>
     <div class="g ${r.points > 0 ? 'lime' : r.points < 0 ? 'red' : 'dim'}">${r.points}<span class="tiny muted"> pts</span></div></button>`;
 }
 function fame(rows) {
@@ -1311,19 +1331,19 @@ function fame(rows) {
   const pts = by(r => r.points, r => r.points > 0);
   const prs = by(r => r.prs, r => r.prs > 0);
   const days = by(r => r.days, r => r.days > 0);
-  const vol = by(r => +r.volume, r => r.volume > 0);
+  const cardio = by(r => r.cardio_min, r => r.cardio_min > 0);
+  const missed = by(r => r.missed_days, r => r.missed_days > 0);
   const cons = by(r => r.consistency_pts, r => r.consistency_pts > 0);
-  const least = rows.slice().sort((a, b) => a.days - b.days || (new Date(a.last_workout || 0) - new Date(b.last_workout || 0)))[0];
   const drops = by(r => r.drops, r => r.drops > 0);
   const ghost = rows.slice().sort((a, b) => new Date(a.last_workout || 0) - new Date(b.last_workout || 0))[0];
   return `<div class="fame">
     ${card('👑 Most points', pts, (pts?.points || 0) + ' pts', 'hl')}
     ${card('🔥 Most PRs', prs, (prs?.prs || 0) + ' PRs', 'orange')}
     ${card('📅 Most days', days, (days?.days || 0) + ' days', 'blue')}
-    ${card('🏗️ Hardest worker', vol, kg(vol?.volume), 'teal')}
+    ${card('🏃 Most cardio', cardio, (cardio?.cardio_min || 0) + ' min' + (cardio?.cardio_km > 0 ? ' · ' + (+cardio.cardio_km).toFixed(1) + 'km' : ''), 'teal')}
     ${cons ? card('📆 Most consistent', cons, cons.consistency_pts / 25 + (cons.consistency_pts === 25 ? ' strong week' : ' strong weeks'), 'purple') : ''}
-    ${card('🛋️ Least days', least, least?.days + ' days', 'warn')}
     ${card('📉 Went backwards', drops, (drops?.drops || 0) + (drops?.drops === 1 ? ' drop' : ' drops'), 'pink')}
+    ${card('🛋️ Most days off', missed, (missed?.missed_days || 0) + ' missed · −' + (missed?.missed_pts || 0), 'warn')}
     ${card('👻 Ghost', ghost, ghost?.last_workout ? daysSince(ghost.last_workout) + ' days since last' : 'never trained', 'gold')}
   </div>`;
 }
@@ -1331,7 +1351,7 @@ A.ptsInfo = el => {
   const r = (S.boardRows || []).find(x => x.user_id === el.dataset.u); if (!r) return location.hash = '#/user/' + el.dataset.u;
   modal(`<div class="row">${avatar(r)}<div><h2 style="margin:0">${esc(r.username)}</h2><div class="small muted">${S.board.period === 'week' ? 'This week' : 'All time'}</div></div>
       <div class="grow"></div><div class="display lime" style="font-size:30px">${r.points}<span class="tiny muted"> pts</span></div></div>
-    <div class="card mt">${POINT_RULES.map(([k, ic, name]) => r[k] ? `<div class="wk-ex"><span>${ic} ${name}</span><b class="${k === 'drop_pts' ? 'red' : 'lime'}">${k === 'drop_pts' ? '−' : '+'}${r[k]}</b></div>` : '').join('') || '<p class="small muted">No points yet.</p>'}</div>
+    <div class="card mt">${POINT_RULES.map(([k, ic, name]) => r[k] ? `<div class="wk-ex"><span>${ic} ${name}${k === 'missed_pts' ? ` (${r.missed_days} day${r.missed_days === 1 ? '' : 's'})` : ''}</span><b class="${NEG.has(k) ? 'red' : 'lime'}">${NEG.has(k) ? '−' : '+'}${r[k]}</b></div>` : '').join('') || '<p class="small muted">No points yet.</p>'}</div>
     <div class="row">${btn('View profile', 'go', '', 'grow', `data-to="#/user/${r.user_id}"`)}${btn('Close', 'closeModal', '', 'primary grow')}</div>`);
 };
 A.boardPeriod = el => { S.board.period = el.dataset.v; lsSet('lb_period', el.dataset.v); render(); };
@@ -1339,7 +1359,7 @@ A.boardScope = el => { S.board.scope = el.dataset.v; render(); };
 A.howRank = () => modal(`<h2>How points work</h2>
   <p class="muted mt">Everyone can win. It’s about showing up and improving, not who’s biggest.</p>
   <div class="card mt">${POINT_RULES.map(([, ic, name, rule]) => `<div class="wk-ex" style="align-items:flex-start"><span style="min-width:44%"><b>${ic} ${name}</b></span><span class="small muted" style="text-align:right">${rule}</span></div>`).join('')}</div>
-  <p class="small muted">A slightly weaker day costs nothing. Only a real drop (more than 5%) loses points, and everyone gets told. 😬</p>
+  <p class="small muted">A slightly weaker day costs nothing. Weight lifted doesn’t count either, because everyone’s bodyweight is different. What counts is turning up and beating <b>yourself</b>.</p>
   <button class="btn primary full mt" onclick="closeModal()">Got it</button>`);
 
 /* ================== SOCIAL ================== */
@@ -1349,9 +1369,14 @@ async function viewSocial(tab) {
     <div class="seg mb"><button class="${tab === 'feed' ? 'on' : ''}" data-act="go" data-to="#/social/feed">📰 Feed</button><button class="${tab === 'people' ? 'on' : ''}" data-act="go" data-to="#/social/people">🧑‍🤝‍🧑 People</button><button class="${tab === 'chats' ? 'on' : ''}" data-act="go" data-to="#/social/chats">💬 Chats${S.unreadMsgs ? ` (${S.unreadMsgs})` : ''}</button></div>`;
   if (tab === 'people') return head + await peopleList();
   if (tab === 'chats') return head + await chatList();
-  const feed = await q(sb.from('workouts').select('id,user_id,day_name,notes,total_volume,created_at,duration_min,lifts(exercise,weight,reps,completed),reactions(user_id,emoji),comments(count)')
-    .eq('finished', true).order('created_at', { ascending: false }).limit(30));
-  return head + (feed.map(workoutCard).join('') || `<div class="empty"><span class="e">🦗</span>Quiet in here. Finish a workout and you’ll be the first post.</div>`);
+  const [feed, acts] = await Promise.all([
+    q(sb.from('workouts').select('id,user_id,day_name,notes,total_volume,created_at,duration_min,lifts(exercise,weight,reps,completed),reactions(user_id,emoji),comments(count)')
+      .eq('finished', true).order('created_at', { ascending: false }).limit(30)),
+    q(sb.from('activities').select('*').order('created_at', { ascending: false }).limit(30)),
+  ]);
+  const items = [...feed.map(w => ({ at: w.created_at, html: workoutCard(w) })), ...acts.map(a => ({ at: a.created_at, html: activityCard(a) }))]
+    .sort((x, y) => new Date(y.at) - new Date(x.at)).slice(0, 40);
+  return head + (items.map(i => i.html).join('') || `<div class="empty"><span class="e">🦗</span>Quiet in here. Finish a workout or log some cardio and you’ll be the first post.</div>`);
 }
 function bestSets(lifts) {
   const m = {};
@@ -1503,12 +1528,13 @@ async function viewUser(id) {
   await loadProfiles();
   const p = S.profiles[id]; if (!p) return '<div class="empty">User not found.</div>';
   const me = id === S.me.id;
-  const [workouts, lifts, badges, goals, allRows, weekRows] = await Promise.all([
+  const [workouts, lifts, badges, goals, allRows, weekRows, acts] = await Promise.all([
     q(sb.from('workouts').select('id,day_name,performed_on,created_at,total_volume').eq('user_id', id).eq('finished', true).order('created_at', { ascending: false })),
     q(sb.from('lifts').select('exercise,weight,reps,e1rm,completed,created_at').eq('user_id', id).eq('completed', true).order('created_at').limit(5000)),
     q(sb.from('user_badges').select('*').eq('user_id', id)),
     q(sb.from('goals').select('*').eq('user_id', id).order('created_at', { ascending: false })),
     points(p.is_public ? 'public' : 'friends', null), points(p.is_public ? 'public' : 'friends', weekAgoISO()),
+    q(sb.from('activities').select('*').eq('user_id', id).order('created_at', { ascending: false }).limit(200)),
   ]);
   const locked = !me && !allRows.some(r => r.user_id === id);
   const ranked = allRows.filter(r => r.points > 0);
@@ -1543,7 +1569,7 @@ async function viewUser(id) {
       <div class="stat"><div class="v">${workouts.length}</div><div class="l">Workouts</div></div>
       <div class="stat"><div class="v">${totalDays}</div><div class="l">Days total</div></div>
       <div class="stat"><div class="v">${streak}🔥</div><div class="l">Week streak</div></div>
-      <div class="stat"><div class="v" style="font-size:20px">${kg(row.volume || 0)}</div><div class="l">Total volume</div></div>
+      <div class="stat"><div class="v">${row.cardio_min || 0}</div><div class="l">Cardio min</div></div>
     </div>
     <div class="sec-title"><h2>Badges ${badges.length}/${Object.keys(BADGES).length}</h2></div>
     <p class="help">Tap any badge to see how to earn it.</p>
@@ -1556,6 +1582,9 @@ async function viewUser(id) {
     ${me ? `<div class="card"><div class="row"><input class="inp" id="gEx" list="exList" placeholder="Exercise"><input class="inp" id="gKg" type="number" inputmode="decimal" placeholder="kg" style="max-width:90px"></div>
       <datalist id="exList">${EXERCISES.map(e => `<option value="${e}">`).join('')}</datalist>
       <div class="mt">${btn('🎯 Set goal', 'addGoal', 'Adds a target. Hit that weight in a workout to smash it.', 'primary full')}</div></div>` : ''}
+    <div class="sec-title"><h2>Cardio & recovery</h2></div>
+    ${locked ? '' : cardioSummary(acts)}
+    ${me ? `<div class="mt">${btn('🏃 Log cardio or sauna', 'goCardio', 'Running, swimming, StairMaster, sauna and more.', 'full')}</div>` : ''}
     <div class="sec-title"><h2>Personal records</h2></div>
     ${Object.values(prs).length ? `<div class="card">${Object.values(prs).sort((a, b) => b.e1rm - a.e1rm).map(l => `<div class="wk-ex"><span>${exLink(l.exercise.trim())}</span><span><b>${+l.weight}kg × ${l.reps}</b> <span class="dim tiny">≈${kg(l.e1rm)} max</span></span></div>`).join('')}</div>` : '<p class="small muted">No lifts logged yet.</p>'}
     ${chartEx ? `<div class="sec-title"><h2>Progress</h2></div><div class="card"><div class="chip-list mb">${exNames.map(n => `<button class="chip ${n === chartEx ? 'on' : ''}" data-act="chartEx" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>
@@ -1614,6 +1643,79 @@ A.saveProfile = async () => {
   await q(sb.from('profiles').update(upd).eq('id', S.me.id));
   Object.assign(S.me, upd); closeModal(); toast('Profile saved', '', 'pr'); render();
 };
+
+/* ================== CARDIO & RECOVERY ================== */
+// kind: [emoji, label, has distance, recovery]
+const ACTS = {
+  run: ['🏃', 'Run', true], treadmill: ['🏃‍♂️', 'Treadmill', true], swim: ['🏊', 'Swim', true], bike: ['🚴', 'Bike', true],
+  walk: ['🚶', 'Walk', true], stairmaster: ['🪜', 'StairMaster', false], rower: ['🚣', 'Rowing', true], elliptical: ['⛷️', 'Cross-trainer', false],
+  sport: ['⚽', 'Sport', false], boxing: ['🥊', 'Boxing', false], yoga: ['🧘', 'Yoga/stretch', false],
+  sauna: ['🧖', 'Sauna', false, true], icebath: ['🧊', 'Ice bath', false, true], other: ['💥', 'Other', false],
+};
+const actPts = (k, mins, inten) => ACTS[k]?.[3] ? Math.min(Math.round(mins * 0.15), 10) : Math.min(Math.round(mins * ({ hard: 0.5, easy: 0.2 }[inten] || 0.35)), 40);
+const pace = m => `${Math.floor(m)}:${String(Math.round((m % 1) * 60)).padStart(2, '0')}`;
+const actLine = a => `${a.duration_min} min${a.distance_km ? ` · ${(+a.distance_km).toFixed(1)}km` : ''}${a.distance_km && ['run', 'treadmill', 'walk'].includes(a.kind) ? ` · ${pace(a.duration_min / a.distance_km)}/km` : ''}`;
+function activityPanel() {
+  return `<div class="sec-title" id="cardio"><h2>Cardio & recovery</h2></div>
+    <p class="help">Running, swimming, sauna and more all count. They earn points and stop days-off penalties.</p>
+    <div class="act-grid">${Object.entries(ACTS).map(([k, [e, n]]) => `<button class="act-btn" data-act="logAct" data-k="${k}"><span>${e}</span>${n}</button>`).join('')}</div>
+    <p class="tip mt">Tap one to log it.</p>`;
+}
+A.logAct = el => {
+  const k = el.dataset.k, [e, n, dist, rec] = ACTS[k];
+  const m = modal(`<h2>${e} Log ${esc(n.toLowerCase())}</h2>
+    <label class="f">How long? (minutes)</label>
+    <input class="inp" id="aMin" type="number" inputmode="numeric" placeholder="e.g. 30">
+    <div class="chip-list mt">${[10, 20, 30, 45, 60].map(v => `<button class="chip" type="button" data-min="${v}">${v} min</button>`).join('')}</div>
+    ${dist ? `<label class="f">Distance (km, optional)</label><input class="inp" id="aKm" type="number" inputmode="decimal" step="0.1" placeholder="e.g. 5">` : ''}
+    ${rec ? '' : `<label class="f">How hard was it?</label>
+    <div class="seg" id="aInt"><button data-v="easy">😌 Easy</button><button class="on" data-v="moderate">😤 Moderate</button><button data-v="hard">🥵 Hard</button></div>`}
+    <label class="f">When?</label>
+    <div class="seg" id="aDay"><button class="on" data-v="0">Today</button><button data-v="1">Yesterday</button></div>
+    <label class="f">Notes (optional)</label><input class="inp" id="aNote" maxlength="300" placeholder="How did it go?">
+    <div class="card hl mt" id="aPreview">Enter your minutes to see the points.</div>
+    ${btn('Save ' + esc(n.toLowerCase()), 'saveAct', 'Counts toward the leaderboard and tells your crew.', 'primary big', `data-k="${k}"`)}`);
+  const upd = () => {
+    const mins = +$('#aMin', m).value || 0, inten = $('#aInt .on', m)?.dataset.v || 'moderate';
+    $('#aPreview', m).innerHTML = mins ? `<b>+${actPts(k, mins, inten)} points</b>${rec ? ' and no days-off penalty today' : ' and it counts as an active day (+15)'}` : 'Enter your minutes to see the points.';
+  };
+  m.addEventListener('click', ev => {
+    const c = ev.target.closest('[data-min]'); if (c) { $('#aMin', m).value = c.dataset.min; upd(); }
+    const sg = ev.target.closest('.seg button'); if (sg) { $$('button', sg.parentElement).forEach(b => b.classList.toggle('on', b === sg)); upd(); }
+  });
+  $('#aMin', m).addEventListener('input', upd);
+};
+A.saveAct = async el => {
+  const k = el.dataset.k, mins = parseInt($('#aMin').value), km = parseFloat($('#aKm')?.value);
+  if (!(mins > 0)) return toast('How many minutes?', '', 'loss');
+  const inten = $('#aInt .on')?.dataset.v || 'moderate';
+  const d = new Date(); d.setDate(d.getDate() - (+($('#aDay .on')?.dataset.v || 0)));
+  el.disabled = true;
+  await q(sb.from('activities').insert({ user_id: S.me.id, kind: k, duration_min: mins, distance_km: km > 0 ? km : null, intensity: inten, notes: $('#aNote').value.trim(), performed_on: localDate(d) }));
+  closeModal(); boom(.6); sound('badge'); buzz([60, 40, 60]);
+  toast(`${ACTS[k][0]} ${ACTS[k][1]} logged!`, `+${actPts(k, mins, inten)} points${ACTS[k][3] ? '' : ' + active day'}`, 'pr');
+  render();
+};
+function activityCard(a, withUser = true) {
+  const [e, n] = ACTS[a.kind] || ACTS.other;
+  return `<div class="card act-card">${withUser ? `<div class="row between">${userLink(a.user_id)}<span class="tiny muted">${ago(a.created_at)}</span></div>` : ''}
+    <div class="row ${withUser ? 'mt' : ''}"><div class="act-ic">${e}</div><div class="grow"><b style="font-size:17px">${esc(n)}</b>
+      <div class="small muted">${actLine(a)} · ${esc(a.intensity)}${withUser ? '' : ' · ' + ago(a.created_at)}</div>${a.notes ? `<div class="small mt">“${esc(a.notes)}”</div>` : ''}</div>
+      <span class="pill lime">+${actPts(a.kind, a.duration_min, a.intensity)}</span></div>
+    ${!withUser && a.user_id === S.me.id ? `<button class="btn sm ghost mt" data-act="delAct" data-id="${a.id}">Remove</button>` : ''}</div>`;
+}
+A.delAct = async el => {
+  if (!await confirmBox('Remove this activity?', 'Its points come off the leaderboard.', 'Remove')) return;
+  await q(sb.from('activities').delete().eq('id', el.dataset.id)); render();
+};
+function cardioSummary(acts) {
+  if (!acts.length) return '<p class="small muted">No cardio or recovery logged yet.</p>';
+  const by = {};
+  acts.forEach(a => { const t = by[a.kind] = by[a.kind] || { n: 0, min: 0, km: 0, best: 0 }; t.n++; t.min += a.duration_min; t.km += +a.distance_km || 0; t.best = Math.max(t.best, +a.distance_km || 0); });
+  return `<div class="card">${Object.entries(by).map(([k, t]) => `<div class="wk-ex"><span>${(ACTS[k] || ACTS.other)[0]} ${(ACTS[k] || ACTS.other)[1]} <span class="tiny muted">×${t.n}</span></span>
+    <span class="small"><b>${t.min} min</b>${t.km ? ` · ${t.km.toFixed(1)}km · best ${t.best.toFixed(1)}km` : ''}</span></div>`).join('')}</div>
+    ${acts.slice(0, 5).map(a => activityCard(a, false)).join('')}`;
+}
 
 /* ================== GROUPS ================== */
 const KIND = { crew: ['👥', 'Crew', 'Friends or family training together'], gym: ['🏠', 'Gym', 'Everyone who trains at one gym'], coach: ['🧑‍🏫', 'Coaching', 'A PT or physio with their clients'] };

@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   const json = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 
   const { force } = await req.json().catch(() => ({ force: false }));
-  const { data: last } = await admin.from("recaps").select("*").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: last } = await admin.from("recaps").select("*").is("group_id", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (last && (!force || Date.now() - new Date(last.created_at).getTime() < 60 * 60 * 1000)) {
     return json({ recap: last });
   }
@@ -29,8 +29,9 @@ Deno.serve(async (req) => {
   ]);
   const slim = (rows: any[] | null) =>
     (rows ?? []).map((r) => ({
-      name: r.username, points: r.points, prs: r.prs, went_backwards: r.drops, avg_gain_pct: r.gain_pct,
-      workouts: r.workouts, days_trained: r.days, volume_kg: Math.round(r.volume), last_workout: r.last_workout,
+      name: r.username, points: r.points, prs: r.prs, went_backwards: r.drops,
+      gym_sessions: r.workouts, active_days: r.days, days_off_penalised: r.missed_days, cardio_minutes: r.cardio_min,
+      cardio_km: Number(r.cardio_km), last_active: r.last_workout,
     }));
 
   const client = new Anthropic({ apiKey });
@@ -42,8 +43,9 @@ Deno.serve(async (req) => {
     fallbacks: "default",
     system:
       "You are the hype coach for Outlift, a gym app where friends compete for points. Points come from showing up, PRs, " +
-      "volume moved, sets that hit their target, trying new exercises, consistent weeks and smashed goals. Write a short, punchy recap from the data only. " +
-      "Cover: who's leading on points, most PRs, most days trained, who trained the least, anyone who went backwards. " +
+      "cardio (running, swimming, StairMaster...), sauna, sets that hit their target, new exercises, consistent weeks and smashed goals. " +
+      "Each extra day off with nothing logged costs 20 points. Write a short, punchy recap from the data only. " +
+      "Cover: who's leading on points, most PRs, most cardio, who took the most days off, anyone who went backwards. " +
       "Shout out the best, lightly roast the worst (playful, never cruel about bodies). Use names. Max 140 words. " +
       "Plain text with a few emojis, no markdown headings. If there's barely any data, hype people to log their first sessions.",
     messages: [{

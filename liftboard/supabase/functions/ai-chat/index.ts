@@ -35,11 +35,13 @@ Deno.serve(async (req) => {
   await admin.from("ai_chat_usage").upsert({ user_id: user.id, day: today, count: (usage?.count ?? 0) + 1 });
 
   // The user's own data, so answers are personal.
-  const [{ data: profile }, { data: workouts }, { data: goals }] = await Promise.all([
+  const [{ data: profile }, { data: workouts }, { data: goals }, { data: activities }] = await Promise.all([
     admin.from("profiles").select("username,bodyweight,active_split_id").eq("id", user.id).single(),
     admin.from("workouts").select("day_name,performed_on,total_volume,lifts(exercise,weight,reps,target_reps,completed)")
       .eq("user_id", user.id).eq("finished", true).order("created_at", { ascending: false }).limit(10),
     admin.from("goals").select("exercise,target_weight,achieved_at").eq("user_id", user.id),
+    admin.from("activities").select("kind,duration_min,distance_km,intensity,performed_on")
+      .eq("user_id", user.id).order("created_at", { ascending: false }).limit(15),
   ]);
   const { data: split } = profile?.active_split_id
     ? await admin.from("splits").select("name,days").eq("id", profile.active_split_id).maybeSingle()
@@ -52,6 +54,8 @@ Deno.serve(async (req) => {
     name: profile?.username, bodyweight_kg: profile?.bodyweight ?? null,
     split: split ? { name: split.name, days: split.days.map((d: any) => ({ day: d.name, exercises: d.exercises.map((e: any) => `${e.name} ${e.sets}x${e.reps}`) })) } : null,
     goals: goals ?? [], recent_workouts_newest_first: recent,
+    recent_cardio_and_recovery_newest_first: activities ?? [],
+    points_rules: "15 per active day, PRs, cardio minutes x effort, sauna/ice bath a little; 4 rest days a week free, -20 per extra day with nothing logged",
   };
 
   const client = new Anthropic({ apiKey });
