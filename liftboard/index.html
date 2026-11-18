@@ -18,6 +18,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="ex/map.js"></script>
 <script src="exercises.js"></script>
 <style>
 :root{
@@ -308,6 +309,15 @@ body.noscroll{overflow:hidden}
 #exScreen .ex-foot .btn{max-width:640px;margin:0 auto;display:flex;width:100%}
 .anim-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:14px;margin-top:18px;box-shadow:var(--shadow)}
 svg.exanim{width:100%;height:auto;display:block;max-height:46vh}
+.photo-anim{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:3/2;background:#ddd;cursor:pointer}
+.photo-anim img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.photo-anim .b,.photo-anim .ph-b{animation:swap 2.8s ease-in-out infinite}
+.photo-anim .ph-a{animation:swapOut 2.8s ease-in-out infinite}
+.photo-anim.paused .b,.photo-anim.paused .ph{animation-play-state:paused}
+.photo-anim .ph{position:absolute;left:12px;top:12px;padding:5px 12px;border-radius:99px;background:rgba(0,0,0,.6);color:#fff;font-size:13px;font-weight:600}
+.photo-anim .ph-b{background:var(--lime)}
+@keyframes swap{0%,40%{opacity:0}50%,90%{opacity:1}100%{opacity:0}}
+@keyframes swapOut{0%,40%{opacity:1}50%,90%{opacity:0}100%{opacity:1}}
 .exanim .ground{stroke:#e2ded5;stroke-width:3}
 .exanim .eq{fill:#c9c4ba} .exanim .eq2{fill:#e6e2da}
 .exanim .leg,.exanim .arm,.exanim .torso{stroke:#2c2c31;stroke-width:10;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -1823,6 +1833,7 @@ let stopAnim = null;
 function openExercise(name, opts = {}) {
   closeExercise();
   const info = exerciseInfo(name);
+  const photo = photoFor(name);
   const eq = EQUIP[info.equip] || EQUIP.barbell;
   const inWorkout = !!S.active && location.hash === '#/log';
   const backLabel = inWorkout ? '← Back to workout' : '← Back';
@@ -1830,7 +1841,7 @@ function openExercise(name, opts = {}) {
   el.id = 'exScreen';
   el.innerHTML = `<div class="ex-top"><button class="btn sm" data-act="closeEx">${backLabel}</button><span class="pill">${esc(eq[0])}</span></div>
     <div class="ex-body"><h1>${esc(name)}</h1><div class="muted mt">Works: <b>${esc(info.muscles)}</b></div>
-      <div class="anim-card">${exerciseSvg(info)}<div class="tiny muted center">Watch the movement · loops automatically</div></div>
+      <div class="anim-card">${photo ? photoAnimHtml(photo, esc(name)) : exerciseSvg(info)}<div class="tiny muted center mt">${photo ? 'Start and finish positions · tap the photo to pause' : 'Watch the movement · loops automatically'}</div></div>
       <h2 class="mt2">How to do it</h2>
       <ol class="steps">${info.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
       <div class="card gold mt"><b>💡 Coach tip</b><p class="mt">${esc(info.tip)}</p></div>
@@ -1842,13 +1853,14 @@ function openExercise(name, opts = {}) {
     <div class="ex-foot"><button class="btn primary big" data-act="closeEx">${inWorkout ? '💪 Back to workout' : '← Back'}</button></div>`;
   document.body.appendChild(el);
   document.body.classList.add('noscroll');
-  stopAnim = startAnimation(el.querySelector('svg.exanim'), info);
+  if (!photo) stopAnim = startAnimation(el.querySelector('svg.exanim'), info);
 }
 function closeExercise() {
   if (stopAnim) stopAnim(); stopAnim = null;
   $('#exScreen')?.remove(); document.body.classList.remove('noscroll');
 }
 A.exInfo = el => openExercise(el.dataset.n);
+A.togglePhoto = el => el.classList.toggle('paused');
 A.closeEx = () => closeExercise();
 A.qrAdd = async el => {
   const name = el.dataset.n;

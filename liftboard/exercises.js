@@ -313,6 +313,23 @@ function exerciseInfo(name) {
   return { pattern: p, equip: e, ...PATTERNS[p] };
 }
 
+// ---------- real photos (start + finish position) ----------
+// EX_PHOTOS comes from ex/map.js. Exact name first, then the longest known name inside it ("Incline Barbell Bench Press" → bench press).
+function photoFor(name) {
+  if (typeof EX_PHOTOS === 'undefined') return null;
+  const n = String(name || '').toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+  const single = n.replace(/(?<!s)s$/, ''); // "calf raises" → "calf raise", but "press" stays "press"
+  for (const v of [n, single]) if (EX_PHOTOS[v]) return EX_PHOTOS[v];
+  const keys = Object.keys(EX_PHOTOS).filter(k => n.includes(k) || single.includes(k)).sort((a, b) => b.length - a.length);
+  return keys.length ? EX_PHOTOS[keys[0]] : null;
+}
+function photoAnimHtml(slug, name) {
+  return `<div class="photo-anim" data-act="togglePhoto" title="Tap to pause">
+    <img src="ex/${slug}-0.jpg" alt="${name} start position" loading="eager">
+    <img src="ex/${slug}-1.jpg" alt="${name} finish position" class="b" loading="eager">
+    <span class="ph ph-a">Start</span><span class="ph ph-b">Finish</span></div>`;
+}
+
 // ---------- animation ----------
 const L = { torso: 58, head: 13, upper: 32, fore: 30, thigh: 43, shin: 43 };
 const rad = d => d * Math.PI / 180;
