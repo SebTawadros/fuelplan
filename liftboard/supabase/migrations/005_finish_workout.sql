@@ -112,8 +112,8 @@ begin
      and award_badge(uid, 'comeback') then new_badges := array_append(new_badges, 'comeback'); end if;
 
   -- Leaderboard movement
-  with lb as (select x.*, row_number() over (order by x.gain_pct desc, x.prs desc, x.volume desc) rk from leaderboard(null, null) x where x.gain_pct is not null)
-  select (select rk from lb where lb.user_id = uid), (select count(*) from lb), (select lb.gain_pct from lb where lb.user_id = uid),
+  with lb as (select x.*, row_number() over (order by x.points desc, x.prs desc, x.volume desc) rk from leaderboard_points(null, 'public', null) x where x.workouts > 0)
+  select (select rk from lb where lb.user_id = uid), (select count(*) from lb), (select lb.points from lb where lb.user_id = uid),
          (select lb.user_id from lb where rk = 1), (select lb.user_id from lb order by rk desc limit 1)
     into my_rank, ranked, my_gain, leader, last_user;
 
@@ -123,13 +123,13 @@ begin
       on conflict (key) do update set value = excluded.value;
     if leader = uid then
       perform notify_all(uid, 'leader', '👑 ' || me.username || ' just took #1 on the leaderboard!',
-        'Up ' || my_gain || '% pound-for-pound. Come take it back.', '#/leaderboard');
-      perform notify_user(uid, uid, 'leader', '👑 YOU ARE #1', 'You are leading the whole app at +' || my_gain || '%. Defend it.', '#/leaderboard');
+        'Sitting on ' || my_gain || ' points. Come take it back.', '#/leaderboard');
+      perform notify_user(uid, uid, 'leader', '👑 YOU ARE #1', 'You are leading with ' || my_gain || ' points. Defend it.', '#/leaderboard');
       if award_badge(uid, 'king') then new_badges := array_append(new_badges, 'king'); end if;
     end if;
   end if;
   if ranked >= 3 and last_user = uid then
-    perform notify_all(uid, 'last', '🐢 ' || me.username || ' is DEAD LAST on the leaderboard', 'Only +' || coalesce(my_gain, 0) || '%. Send help (or a roast).', '#/leaderboard');
+    perform notify_all(uid, 'last', '🐢 ' || me.username || ' is DEAD LAST on the leaderboard', 'Only ' || coalesce(my_gain, 0) || ' points. Send help (or a roast).', '#/leaderboard');
     perform notify_user(uid, uid, 'last', '🐢 You are dead last', 'Everyone can see it. Time to move.', '#/leaderboard');
   end if;
 
@@ -140,6 +140,6 @@ begin
   end if;
 
   return jsonb_build_object('prs', prs, 'losses', losses, 'badges', to_jsonb(new_badges), 'goals', goals_hit,
-    'rank', my_rank, 'ranked', ranked, 'gain', my_gain, 'volume', vol, 'workouts', total_workouts);
+    'rank', my_rank, 'ranked', ranked, 'points', my_gain, 'volume', vol, 'workouts', total_workouts);
 end $$;
 grant execute on function public.finish_workout(uuid) to authenticated;

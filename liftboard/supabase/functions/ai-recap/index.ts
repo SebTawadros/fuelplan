@@ -24,12 +24,12 @@ Deno.serve(async (req) => {
 
   const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString();
   const [{ data: allTime }, { data: week }] = await Promise.all([
-    admin.rpc("leaderboard", { p_since: null, p_gym: null }),
-    admin.rpc("leaderboard", { p_since: weekAgo, p_gym: null }),
+    admin.rpc("leaderboard_points", { p_since: null, p_scope: "public", p_group: null }),
+    admin.rpc("leaderboard_points", { p_since: weekAgo, p_scope: "public", p_group: null }),
   ]);
   const slim = (rows: any[] | null) =>
     (rows ?? []).map((r) => ({
-      name: r.username, gain_pct: r.gain_pct, prs: r.prs, went_backwards: r.drops,
+      name: r.username, points: r.points, prs: r.prs, went_backwards: r.drops, avg_gain_pct: r.gain_pct,
       workouts: r.workouts, days_trained: r.days, volume_kg: Math.round(r.volume), last_workout: r.last_workout,
     }));
 
@@ -41,9 +41,9 @@ Deno.serve(async (req) => {
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
     system:
-      "You are the hype coach for Outlift, a gym app where friends compete on pound-for-pound strength gains " +
-      "(percentage improvement on their own previous lifts, not raw weight). Write a short, punchy recap from the data only. " +
-      "Cover: who's leading on gains, most PRs, most days trained, who trained the least, anyone who went backwards. " +
+      "You are the hype coach for Outlift, a gym app where friends compete for points. Points come from showing up, PRs, " +
+      "volume moved, sets that hit their target, trying new exercises, consistent weeks and smashed goals. Write a short, punchy recap from the data only. " +
+      "Cover: who's leading on points, most PRs, most days trained, who trained the least, anyone who went backwards. " +
       "Shout out the best, lightly roast the worst (playful, never cruel about bodies). Use names. Max 140 words. " +
       "Plain text with a few emojis, no markdown headings. If there's barely any data, hype people to log their first sessions.",
     messages: [{

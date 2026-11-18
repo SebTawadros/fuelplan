@@ -17,6 +17,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="exercises.js"></script>
 <style>
 :root{
   --bg:#f7f6f2; --bg2:#f1efea; --card:#ffffff; --card2:#f5f3ee; --line:#e8e5de;
@@ -259,12 +261,79 @@ svg.chart{width:100%;height:180px;display:block}
 .day{border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px;background:var(--bg2)}
 .exrow{display:grid;grid-template-columns:1fr 58px 70px 30px;gap:8px;margin-top:8px}
 .exrow .inp{padding:10px 11px}
+
+/* ---- phone-friendly sizing ---- */
+html,body{font-size:17px}
+:root{--muted:#62626b;--dim:#8e8e97;--nav:84px}
+.tip{font-size:13px;color:#86868f}
+.btn{min-height:50px;font-size:16px}
+.btn.sm{min-height:42px;font-size:14.5px;padding:9px 14px}
+.btn.big{min-height:60px;font-size:18px}
+.inp,.sets input{font-size:17px}
+.iconbtn{width:46px;height:46px}
+nav.bottom a{font-size:12.5px} nav.bottom a .ic{font-size:25px;width:52px;height:34px}
+button.lrow,button.pod,.fame button.card{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+button.pod{background:none;border:none;text-align:center}
+.fame button.card{display:block}
+.back{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:15px}
+.big-arrow{font-size:26px;color:var(--dim)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{border:1px solid var(--line);border-radius:20px;padding:18px 14px;font:inherit;font-weight:600;font-size:16px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;cursor:pointer;color:var(--text);transition:transform .12s}
+.tile span{font-size:30px}
+.tile:active{transform:scale(.96)}
+.t-blue{background:var(--t-blue)} .t-purple{background:var(--t-purple)} .t-gold{background:var(--t-gold)} .t-pink{background:var(--t-pink)}
+#coachBtn{background:var(--t-purple);border-color:#e1d6fb}
+.sticky-finish{position:sticky;bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 10px);z-index:20;margin-top:10px}
+.sticky-finish .tip{background:var(--bg);border-radius:8px;padding:2px 6px}
+
+/* ---- tappable exercise names ---- */
+.exlink{border:none;background:none;font:inherit;color:inherit;font-weight:600;cursor:pointer;padding:0;text-align:left;display:inline-flex;align-items:center;gap:6px}
+.exlink .i{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--t-blue);color:var(--blue);font-size:13px;font-weight:700}
+.exchips{display:flex;flex-wrap:wrap;gap:8px}
+.exchips .exlink{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:8px 10px 8px 14px;font-size:14.5px;font-weight:500;min-height:42px}
+
+/* ---- exercise screen ---- */
+body.noscroll{overflow:hidden}
+#exScreen{position:fixed;inset:0;z-index:95;background:var(--bg);overflow-y:auto;animation:up .3s cubic-bezier(.2,1,.3,1)}
+#exScreen .ex-top{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:rgba(247,246,242,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+#exScreen .ex-body{max-width:640px;margin:0 auto;padding:20px}
+#exScreen .ex-foot{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
+#exScreen .ex-foot .btn{max-width:640px;margin:0 auto;display:flex;width:100%}
+.anim-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:14px;margin-top:18px;box-shadow:var(--shadow)}
+svg.exanim{width:100%;height:auto;display:block;max-height:46vh}
+.exanim .ground{stroke:#e2ded5;stroke-width:3}
+.exanim .eq{fill:#c9c4ba} .exanim .eq2{fill:#e6e2da}
+.exanim .leg,.exanim .arm,.exanim .torso{stroke:#2c2c31;stroke-width:10;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.exanim .foot{stroke:#2c2c31;stroke-width:8;stroke-linecap:round}
+.exanim .head{fill:#2c2c31}
+.exanim .plate{fill:var(--blue)} .exanim .hub{fill:#fff} .exanim .bar{stroke:#666;stroke-width:5}
+.exanim .db{fill:var(--orange)} .exanim .cable{stroke:#9a9a9a;stroke-width:2.5;stroke-dasharray:5 4}
+.steps{list-style:none;counter-reset:s;margin-top:12px}
+.steps li{counter-increment:s;position:relative;padding:4px 0 14px 46px;font-size:16.5px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;background:var(--lime);color:#fff;font-weight:700;display:grid;place-items:center}
+
+/* ---- chat coach ---- */
+.bub.coach{background:var(--t-purple);border-color:#e1d6fb;white-space:pre-wrap}
+.typing span{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--purple);margin:0 2px;animation:dot 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s} .typing span:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+
+/* ---- QR codes ---- */
+.qr-pick{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:340px;overflow:auto}
+.qr-opt{display:flex;gap:8px;align-items:center;font-size:14.5px;padding:8px;border-radius:10px;background:var(--bg2)}
+.qr-opt input{width:20px;height:20px}
+.qr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.qr-card{background:#fff;border:2px solid #222;border-radius:16px;padding:14px;text-align:center;display:flex;flex-direction:column;gap:6px;break-inside:avoid}
+.qr-card svg{width:100%;height:auto}
+.qr-card b{font-size:17px} .qr-card span{font-size:11px;color:#555}
+@media print{body *{visibility:hidden} #printArea,#printArea *{visibility:visible} #printArea{position:absolute;left:0;top:0;width:100%} .qr-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body class="noauth">
 <header class="top hidden" id="top">
   <a href="#/" class="logo">OUT<b>LIFT</b></a>
   <div class="row">
+    <a href="#/coach" class="iconbtn" id="coachBtn" title="AI coach" aria-label="AI coach">🤖</a>
     <a href="#/social/chats" class="iconbtn" id="chatBtn" title="Messages" aria-label="Messages">💬<span class="dot hidden" id="msgDot"></span></a>
     <a href="#/notifications" class="iconbtn" id="bellBtn" title="Notifications" aria-label="Notifications">🔔<span class="dot hidden" id="bellDot"></span></a>
   </div>
@@ -328,7 +397,7 @@ const S = {
   session: null, me: null, profiles: {}, splits: [], gyms: [],
   unread: 0, unreadMsgs: 0, myLifts: null, myWorkouts: null,
   active: lsGet('lb_active', null), draft: null, welcome: false,
-  board: { period: lsGet('lb_period', 'week'), scope: 'all' },
+  board: { period: lsGet('lb_period', 'week'), scope: 'public' },
   feedTab: 'feed', splitTab: 'ready', pushOn: false, swReg: null, channel: null, isAdmin: false,
 };
 const prefs = Object.assign({ tips: true, sound: true, rest: 90 }, lsGet('lb_prefs', {}));
@@ -579,12 +648,18 @@ const routes = [
   [/^#\/notifications$/, viewNotifs, ''],
   [/^#\/profile$/, () => viewUser(S.me.id), 'profile'],
   [/^#\/user\/([\w-]+)$/, viewUser, 'profile'],
-  [/^#\/gyms$/, viewGyms, 'profile'],
+  [/^#\/(?:groups|gyms)$/, viewGroups, 'social'],
+  [/^#\/group\/([\w-]+)$/, viewGroup, 'social'],
+  [/^#\/join\/(\w+)$/, viewJoin, 'social'],
+  [/^#\/qr$/, viewQR, 'train'],
+  [/^#\/x\/(.+)$/, viewScan, 'train'],
+  [/^#\/coach$/, viewCoach, 'home'],
   [/^#\/settings$/, viewSettings, 'profile'],
 ];
 let renderSeq = 0;
 async function render() {
   const seq = ++renderSeq;
+  if (!(location.hash || '').startsWith('#/x/')) closeExercise();
   const app = $('#app');
   if (!S.session) { document.body.className = 'noauth' + (prefs.tips ? '' : ' notips'); $('#top').classList.add('hidden'); $('#nav').classList.add('hidden'); app.innerHTML = viewAuth(); return; }
   document.body.className = prefs.tips ? '' : 'notips';
@@ -602,6 +677,7 @@ async function render() {
     app.innerHTML = html;
     if (!same) { app.classList.remove('view-in'); void app.offsetWidth; app.classList.add('view-in'); window.scrollTo(0, 0); }
     after.forEach(f => f()); after = [];
+    if (S.pendingEx && !hash.startsWith('#/x/')) { const p = S.pendingEx; S.pendingEx = null; openExercise(p.name, p.opts); }
   } catch (e) {
     if (seq !== renderSeq) return;
     app.innerHTML = `<div class="empty"><span class="e">😵</span>Something went wrong.<div class="small mt">${esc(e.message)}</div>
@@ -734,14 +810,15 @@ function nextDay(split, workouts) {
   return (i + 1) % split.days.length;
 }
 async function viewHome() {
-  const [workouts, board, feed, recap] = await Promise.all([
+  const [workouts, board, feed, recap, plans] = await Promise.all([
     ensureMyWorkouts(true),
-    leaderboard(null, null),
+    points('public', weekAgoISO()),
     q(sb.from('workouts').select('id,user_id,day_name,total_volume,created_at').eq('finished', true).order('created_at', { ascending: false }).limit(6)),
-    sb.from('recaps').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle().then(r => r.data),
+    sb.from('recaps').select('*').is('group_id', null).order('created_at', { ascending: false }).limit(1).maybeSingle().then(r => r.data),
+    q(sb.from('assignments').select('*').eq('client_id', S.me.id).eq('status', 'new').order('created_at', { ascending: false })),
   ]);
   const me = S.me, split = S.splits.find(s => s.id === me.active_split_id);
-  const ranked = board.filter(r => r.gain_pct != null);
+  const ranked = board.filter(r => r.points > 0);
   const myRow = board.find(r => r.user_id === me.id);
   const rank = ranked.findIndex(r => r.user_id === me.id) + 1;
   const weekDays = new Set(workouts.filter(w => new Date(w.performed_on + 'T12:00:00').getTime() >= weekStart(new Date())).map(w => w.performed_on)).size;
@@ -759,7 +836,7 @@ async function viewHome() {
   } else if (day) {
     hero = `<div class="card hl"><div class="row between"><span class="pill lime">NEXT UP</span><span class="small muted">${esc(split.name)}</span></div>
       <h2 class="mt" style="font-size:34px">${esc(day.name)}</h2><div class="small muted">${esc(day.focus || '')}</div>
-      <div class="small mt mb">${day.exercises.map(e => esc(e.name)).join(' · ')}</div>
+      <div class="exchips mt mb">${day.exercises.map(e => exLink(e.name)).join('')}</div>
       ${btn('Start today’s workout 💥', 'startDay', 'Opens the logger with every exercise ready. Weights from last time are filled in for you.', 'primary big', `data-split="${split.id}" data-day="${nd}"`)}
       <div class="row mt">${btn('Pick a different day', 'go', 'See all days in your split.', 'sm ghost', 'data-to="#/train"')}</div></div>`;
   } else {
@@ -770,17 +847,24 @@ async function viewHome() {
   return `
     <div class="row between mb"><div><h1>Hey ${esc(me.username)} ${esc(me.avatar)}</h1>
       <div class="small muted">${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}${lastDays != null && lastDays >= 3 ? ` · <span class="red">${lastDays} days since you trained 😬</span>` : ''}</div></div></div>
+    ${plans.map(planCard).join('')}
     ${hero}
+    <div class="tiles mb">
+      <button class="tile t-blue" data-act="go" data-to="#/train"><span>🏋️</span>Train</button>
+      <button class="tile t-purple" data-act="go" data-to="#/coach"><span>🤖</span>Ask coach</button>
+      <button class="tile t-gold" data-act="go" data-to="#/leaderboard"><span>🏆</span>Leaderboard</button>
+      <button class="tile t-pink" data-act="go" data-to="#/groups"><span>👥</span>Groups</button>
+    </div>
     <div class="stats mb">
       <div class="stat"><div class="v" data-count="${workouts.length}">0</div><div class="l">Workouts</div></div>
       <div class="stat"><div class="v" data-count="${weekDays}">0</div><div class="l">Days this wk</div></div>
       <div class="stat"><div class="v"><span data-count="${streak}">0</span>🔥</div><div class="l">Week streak</div></div>
-      <div class="stat"><div class="v ${rank === 1 ? 'gold' : ''}">${rank ? '#' + rank : '—'}</div><div class="l">${myRow?.gain_pct != null ? pct(myRow.gain_pct) : 'Rank'}</div></div>
+      <div class="stat"><div class="v ${rank === 1 ? 'gold' : ''}">${rank ? '#' + rank : '—'}</div><div class="l">${myRow?.points ? myRow.points + ' pts wk' : 'Rank'}</div></div>
     </div>
     ${notifCard()}
     ${recapCard(recap)}
     <div class="sec-title"><h2>Live feed</h2><a href="#/social" class="small lime">See all →</a></div>
-    <p class="help">Every workout anyone finishes shows up here. Tap one to react or comment.</p>
+    <p class="help">Workouts from everyone you can see. Tap one to react or comment.</p>
     ${feed.length ? feed.map(w => `<a href="#/workout/${w.id}" class="lrow">${avatar(prof(w.user_id))}<div class="grow"><b>${esc(prof(w.user_id).username)}</b> <span class="muted">finished</span> ${esc(w.day_name || 'a workout')}<div class="tiny muted">${ago(w.created_at)} · ${kg(w.total_volume)} moved</div></div><span>›</span></a>`).join('')
       : `<div class="empty"><span class="e">🦗</span>No workouts yet. Be the first — everyone will get notified.</div>`}
   `;
@@ -790,6 +874,20 @@ function recapCard(recap) {
     <p class="mt small" style="white-space:pre-wrap">${recap ? esc(recap.content) : 'No recap yet. Hit the button and the AI coach will read the real leaderboard and call out who’s winning, who’s slacking and who went backwards.'}</p>
     <div class="mt">${btn('🎙️ Get a fresh recap', 'recap', 'AI reads everyone’s real numbers and writes a shout-out + roast. Everyone gets notified. Max once an hour.', 'sm')}</div></div>`;
 }
+function planCard(a) {
+  const s = S.splits.find(x => x.id === a.split_id);
+  return `<div class="card purple"><span class="pill">📋 FROM YOUR COACH</span>
+    <h2 class="mt">${esc(s?.name || 'A new plan')}</h2><div class="small muted">Assigned by <b>${esc(prof(a.coach_id).username)}</b> · ${ago(a.created_at)}</div>
+    ${a.note ? `<p class="mt">“${esc(a.note)}”</p>` : ''}
+    <div class="row mt" style="align-items:flex-start">${btn('Follow this plan', 'acceptPlan', 'Makes it your split. Your Train tab shows its days.', 'primary grow', `data-id="${a.id}" data-split="${a.split_id}"`)}
+      ${btn('Not now', 'dismissPlan', 'Hides it. Your coach can see you skipped it.', 'grow', `data-id="${a.id}"`)}</div></div>`;
+}
+A.acceptPlan = async el => {
+  await q(sb.from('profiles').update({ active_split_id: el.dataset.split }).eq('id', S.me.id));
+  await q(sb.from('assignments').update({ status: 'accepted' }).eq('id', el.dataset.id));
+  S.me.active_split_id = el.dataset.split; boom(.5); toast('Plan followed! 💪', 'It’s on your Train tab now.', 'pr'); render();
+};
+A.dismissPlan = async el => { await q(sb.from('assignments').update({ status: 'dismissed' }).eq('id', el.dataset.id)); render(); };
 A.recap = async el => {
   el.disabled = true; el.textContent = 'Coach is thinking…';
   const { data, error } = await sb.functions.invoke('ai-recap', { body: { force: true } });
@@ -811,12 +909,13 @@ async function viewTrain() {
     ${split ? `<div class="card"><div class="row between"><div><div class="tiny muted">YOUR SPLIT</div><h2 style="margin:2px 0 0">${esc(split.name)}</h2></div>
       ${btn('Change', 'go', 'Pick another split.', 'sm', 'data-to="#/splits"')}</div></div>
       ${split.days.map((d, i) => `<div class="card ${i === nd ? 'hl' : TINTS[i % TINTS.length]}"><div class="row between"><div><h3>${esc(d.name)} ${i === nd ? '<span class="pill lime">NEXT</span>' : ''}</h3><div class="small muted">${esc(d.focus || '')}</div></div></div>
-        <div class="small mt">${d.exercises.map(e => `${esc(e.name)} <span class="dim">${e.sets}×${esc(e.reps)}</span>`).join(' · ')}</div>
+        <div class="exchips mt">${d.exercises.map(e => exLink(e.name)).join('')}</div>
         <div class="mt">${btn('Start ' + esc(d.name), 'startDay', 'Loads these exercises into the workout logger.', i === nd ? 'primary full' : 'full', `data-split="${split.id}" data-day="${i}"`)}</div></div>`).join('')}`
       : `<div class="card hl"><h3>No split yet</h3><p class="small muted mb">Follow a split to get your days laid out here.</p>${btn('Choose a split', 'go', 'Browse ready-made and community splits.', 'primary full', 'data-to="#/splits"')}</div>`}
     <div class="card">${btn('➕ Quick empty workout', 'startEmpty', 'Starts a blank session — add whatever exercises you’re doing today.', 'full')}</div>
     <div class="card">${btn('📚 Browse all splits', 'go', 'Ready-made splits, community splits, and your own.', 'full', 'data-to="#/splits"')}</div>
     <div class="sec-title"><h2>Gym tools</h2></div>
+    <div class="card purple">${btn('🔳 QR codes for gym machines', 'go', 'Print codes to stick on machines. Scanning one shows how to use it and logs it.', 'full', 'data-to="#/qr"')}</div>
     <div class="card"><h3>🧮 Plate calculator</h3><p class="small muted">Type the total weight — we’ll tell you what to put on each side of a 20kg bar.</p>
       <div class="row mt"><input class="inp" id="plateIn" type="number" inputmode="decimal" placeholder="e.g. 100"><button class="btn" data-act="plates">Calc</button></div>
       <div class="tip mt">Works out the plates per side.</div><div id="plateOut" class="mt"></div></div>
@@ -874,12 +973,12 @@ async function viewLog() {
       <div class="tip mt">Pick from the list or type your own. We’ll pre-fill your weights from last time.</div>
       <datalist id="exList">${EXERCISES.map(e => `<option value="${e}">`).join('')}</datalist></div>
     <div class="card"><label class="f" style="margin-top:0">Notes (optional)</label><textarea class="inp" data-bind="notes" placeholder="How did it feel? Anything to remember?">${esc(a.notes)}</textarea></div>
-    ${btn('🏁 Finish workout', 'finish', 'Saves everything, checks for PRs and losses, updates the leaderboard and notifies everyone.', 'primary big')}
+    <div class="sticky-finish">${btn('🏁 Finish workout', 'finish', 'Saves everything, checks for PRs and losses, updates the leaderboard and notifies everyone.', 'primary big')}</div>
     <div style="height:30px"></div>`;
 }
 function exCard(ex, i) {
   const lastTxt = ex.last ? `Last time: ${ex.last.sets.map(([w, r]) => `${w}×${r}`).join(', ')} · Best ${kg(ex.last.best)}` : 'First time logging this — set your baseline!';
-  return `<div class="card ex-card" data-ex="${i}"><div class="row between"><h3>${esc(ex.name)}</h3><button class="xbtn" data-act="rmEx" data-i="${i}" title="Remove exercise" aria-label="Remove exercise">✕</button></div>
+  return `<div class="card ex-card" data-ex="${i}"><div class="row between"><h3>${exLink(ex.name)}</h3><button class="xbtn" data-act="rmEx" data-i="${i}" title="Remove exercise" aria-label="Remove exercise">✕</button></div>
     <div class="tiny muted">${ex.target ? `Target: ${esc(ex.target)} reps · ` : ''}${esc(lastTxt)}</div>
     <table class="sets"><thead><tr><th class="num">Set</th><th>kg</th><th>Reps</th><th style="width:50px;text-align:center">Done</th></tr></thead><tbody>
     ${ex.sets.map((s, j) => `<tr class="${s.done ? 'done' : ''}"><td class="num">${j + 1}</td>
@@ -969,8 +1068,8 @@ function showResults(r) {
     ${losses.map(p => `<div class="card warn mt shake"><div class="row between"><b>📉 ${esc(p.exercise)}</b><span class="pill red">${p.pct}%</span></div><div class="small muted">${p.weight}kg × ${p.reps} · you did ${p.prev_weight}kg before. Everyone has been notified 😬</div></div>`).join('')}
     ${badges.length ? `<h3 class="mt2">Badges unlocked</h3><div class="badges mt">${badges.map(b => `<div class="bdg new"><span class="e">${BADGES[b]?.[0] || '🏅'}</span><div class="n">${esc(BADGES[b]?.[1] || b)}</div></div>`).join('')}</div>` : ''}
     <div class="card mt"><div class="row between"><div><div class="tiny muted">LEADERBOARD</div><b style="font-size:18px">${r.rank ? `#${r.rank} of ${r.ranked}` : 'Not ranked yet'}</b></div>
-      <div class="display lime" style="font-size:30px">${r.gain != null ? pct(r.gain) : ''}</div></div>
-      ${r.rank ? '' : '<div class="tiny muted mt">Log the same exercise in 2 sessions and you’ll appear on the board.</div>'}</div>
+      <div class="display lime" style="font-size:28px">${r.points != null ? r.points + ' pts' : ''}</div></div>
+      ${r.rank ? '' : '<div class="tiny muted mt">Your profile is private, so you’re only ranked inside your groups.</div>'}</div>
     <div class="row mt">${btn('See leaderboard', 'goBoard', 'Check where you rank.', 'grow')}${btn('Done', 'closeModal', 'Back to your workout summary.', 'primary grow')}</div>`);
   countUp($('#volCount', m), +r.volume || 0, 0, 'kg');
   if (good) { boom(prs.length ? 1.3 : .8); sound(prs.length ? 'pr' : 'badge'); buzz([80, 50, 80, 50, 160]); }
@@ -1062,7 +1161,7 @@ async function viewSplit(id) {
     ${mine ? `<div class="row mt" style="align-items:flex-start">${btn('Edit', 'go', 'Change days and exercises.', 'sm grow', `data-to="#/split-edit/${id}"`)}${btn('Delete', 'delSplit', 'Removes it for everyone.', 'sm danger grow', `data-id="${id}"`)}</div>` : ''}
     ${followers.length ? `<div class="card mt"><div class="tiny muted mb">👥 ${followers.length} FOLLOWING THIS</div><div class="row wrap">${followers.map(p => `<a href="#/user/${p.id}" title="${esc(p.username)}">${avatar(p, 'sm')}</a>`).join('')}</div></div>` : ''}
     ${s.days.map(d => `<div class="card"><h3>${esc(d.name)}</h3><div class="small muted">${esc(d.focus || '')}</div>
-      ${d.exercises.map(e => `<div class="wk-ex"><span>${esc(e.name)}</span><span class="muted">${e.sets} × ${esc(e.reps)}</span></div>`).join('')}</div>`).join('')}
+      ${d.exercises.map(e => `<div class="wk-ex"><span>${exLink(e.name)}</span><span class="muted">${e.sets} × ${esc(e.reps)}</span></div>`).join('')}</div>`).join('')}
     ${commentsBlock(comments, 'split', id)}`;
 }
 function commentsBlock(comments, type, id) {
@@ -1145,75 +1244,102 @@ A.saveSplit = async el => {
 };
 
 /* ================== LEADERBOARD ================== */
+const POINT_RULES = [
+  ['show_pts', '📅', 'Showing up', '15 per day you train'],
+  ['pr_pts', '🔥', 'PRs', '10 + your % jump (up to +20 bonus) for every new best'],
+  ['work_pts', '🏗️', 'Hard work', '2 per 1,000kg you move'],
+  ['sets_pts', '✅', 'Sets smashed', '1 per set where you hit your target reps'],
+  ['variety_pts', '🧪', 'Variety', '5 for each new exercise you try'],
+  ['consistency_pts', '📆', 'Consistency', '25 for every week with 3+ training days'],
+  ['goal_pts', '🎯', 'Goals', '30 for every goal you smash'],
+  ['hype_pts', '📣', 'Team spirit', '1 per reaction or comment you give (max 20)'],
+  ['drop_pts', '📉', 'Going backwards', '−5 when a lift drops more than 5% below your best'],
+];
+const points = (scope, since, group) => q(sb.rpc('leaderboard_points', { p_since: since, p_scope: scope, p_group: group || null }));
+async function myGroups() {
+  const rows = await q(sb.from('group_members').select('role,gyms(*)').eq('user_id', S.me.id));
+  return rows.filter(r => r.gyms).map(r => ({ ...r.gyms, role: r.role }));
+}
 async function viewBoard() {
   await loadProfiles();
-  const { period, scope } = S.board;
-  const gym = scope === 'gym' ? S.me.gym_id : null;
-  if (scope === 'gym' && !gym) {
-    return boardHeader() + `<div class="card hl"><h3>You’re not in a gym yet</h3><p class="small muted mb">Join or create a gym crew to get a leaderboard just for your mates.</p>${btn('Find a gym', 'go', 'See all gym crews or make your own.', 'primary full', 'data-to="#/gyms"')}</div>`;
+  const { period } = S.board;
+  let scope = S.board.scope;
+  const groups = await myGroups();
+  if (scope.startsWith('g:') && !groups.some(g => 'g:' + g.id === scope)) scope = S.board.scope = 'public';
+  if (scope === 'region' && !S.me.region) {
+    return boardHeader(groups) + `<div class="card blue"><h3>📍 Set your area first</h3><p class="small muted mt mb">Add your suburb or city in Settings to see a leaderboard of public lifters near you.</p>
+      ${btn('Set my area', 'go', 'Opens Settings → Privacy.', 'primary full', 'data-to="#/settings"')}</div>`;
   }
+  const since = period === 'week' ? weekAgoISO() : null;
   const [rows, recap] = await Promise.all([
-    leaderboard(period === 'week' ? weekAgoISO() : null, gym),
-    sb.from('recaps').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle().then(r => r.data),
+    scope.startsWith('g:') ? points('group', since, scope.slice(2)) : points(scope, since),
+    sb.from('recaps').select('*').is('group_id', null).order('created_at', { ascending: false }).limit(1).maybeSingle().then(r => r.data),
   ]);
-  const ranked = rows.filter(r => r.gain_pct != null);
-  const unranked = rows.filter(r => r.gain_pct == null);
-  const top = ranked.slice(0, 3), rest = ranked.slice(3);
-  const pod = (r, place) => r ? `<a href="#/user/${r.user_id}" class="pod p${place}">${avatar(r)}<div class="name">${esc(r.username)}</div><div class="gain ${r.gain_pct < 0 ? 'neg' : ''}">${pct(r.gain_pct)}</div><div class="block">${place}</div></a>` : '<div></div>';
-  return boardHeader() + `
-    ${ranked.length ? `<div class="podium">${pod(top[1], 2)}${pod(top[0], 1)}${pod(top[2], 3)}</div>` : `<div class="empty"><span class="e">🏁</span>Nobody’s on the board ${period === 'week' ? 'this week' : 'yet'}.<div class="small mt">${period === 'week' ? 'Beat a lift you did before this week to get on.' : 'Log the same exercise in 2 sessions to get ranked.'}</div></div>`}
+  S.boardRows = rows;
+  const active = rows.filter(r => r.points !== 0 || r.workouts > 0);
+  const idle = rows.filter(r => !(r.points !== 0 || r.workouts > 0));
+  const top = active.slice(0, 3), rest = active.slice(3);
+  const pod = (r, place) => r ? `<button class="pod p${place}" data-act="ptsInfo" data-u="${r.user_id}">${avatar(r)}<div class="name">${esc(r.username)}</div><div class="gain">${r.points} pts</div><div class="block">${place}</div></button>` : '<div></div>';
+  return boardHeader(groups) + `
+    ${active.length ? `<div class="podium">${pod(top[1], 2)}${pod(top[0], 1)}${pod(top[2], 3)}</div>` : `<div class="empty"><span class="e">🏁</span>Nobody has points ${period === 'week' ? 'this week' : 'yet'}. Log a workout to get on the board.</div>`}
     ${rest.map((r, i) => lrow(r, i + 4, i)).join('')}
-    ${unranked.length ? `<div class="tiny muted mt mb">NOT RANKED YET — ${period === 'week' ? 'no improvement data this week' : 'need 2 sessions of the same lift'}</div>${unranked.map((r, i) => lrow(r, '–', i + rest.length)).join('')}` : ''}
-    <div class="sec-title"><h2>Hall of fame & shame</h2></div><p class="help">Who’s working the hardest — and who isn’t. ${period === 'week' ? 'Last 7 days.' : 'All time.'}</p>
+    ${idle.length ? `<div class="tiny muted mt mb">NO POINTS ${period === 'week' ? 'THIS WEEK' : 'YET'}</div>${idle.map((r, i) => lrow(r, '–', i + rest.length)).join('')}` : ''}
+    <p class="tip center mt">Tap anyone to see exactly where their points came from.</p>
+    <div class="sec-title"><h2>Hall of fame & shame</h2></div><p class="help">${period === 'week' ? 'Last 7 days.' : 'All time.'}</p>
     ${fame(rows)}
-    <div class="mt2">${recapCard(recap)}</div>`;
+    ${scope === 'public' ? `<div class="mt2">${recapCard(recap)}</div>` : ''}`;
 }
-function boardHeader() {
+function boardHeader(groups) {
   const { period, scope } = S.board;
-  return `<div class="row between"><h1>Leaderboard</h1><button class="btn sm ghost" data-act="howRank">How it works?</button></div>
-    <p class="help mt">Ranked <b>pound for pound</b>: how much stronger you got compared to <i>yourself</i>, not who lifts the most.</p>
+  const chip = (v, label) => `<button class="chip ${scope === v ? 'on' : ''}" data-act="boardScope" data-v="${v}">${label}</button>`;
+  return `<div class="row between"><h1>Leaderboard</h1><button class="btn sm" data-act="howRank">How points work</button></div>
+    <p class="help mt">Earn points for showing up, PRs, hard work, consistency and more.</p>
     <div class="seg"><button class="${period === 'week' ? 'on' : ''}" data-act="boardPeriod" data-v="week">This week</button><button class="${period === 'all' ? 'on' : ''}" data-act="boardPeriod" data-v="all">All time</button></div>
-    <div class="seg mt mb"><button class="${scope === 'all' ? 'on' : ''}" data-act="boardScope" data-v="all">🌍 Everyone</button><button class="${scope === 'gym' ? 'on' : ''}" data-act="boardScope" data-v="gym">🏠 My gym</button></div>`;
+    <div class="chip-list mt mb">${chip('public', '🌍 Everyone')}${chip('friends', '👥 My groups')}${chip('region', '📍 ' + esc(S.me.region || 'Local'))}
+      ${groups.map(g => chip('g:' + g.id, esc(g.emoji + ' ' + g.name))).join('')}</div>`;
 }
 function lrow(r, rank, i) {
   const me = r.user_id === S.me.id;
-  const g = r.gain_pct;
-  return `<a href="#/user/${r.user_id}" class="lrow ${me ? 'me' : ''}" style="animation-delay:${i * 40}ms"><div class="rk">${rank}</div>${avatar(r)}
-    <div class="grow"><b>${esc(r.username)}${me ? ' (you)' : ''}</b><div class="tiny muted">${r.prs} PRs · ${r.days} days · ${kg(r.volume)}${r.drops ? ` · <span class="red">${r.drops} drop${r.drops === 1 ? '' : 's'}</span>` : ''}</div></div>
-    <div class="g ${g == null ? 'dim' : g > 0 ? 'lime' : g < 0 ? 'red' : 'muted'}">${pct(g)}</div></a>`;
+  return `<button class="lrow ${me ? 'me' : ''}" style="animation-delay:${i * 40}ms" data-act="ptsInfo" data-u="${r.user_id}"><div class="rk">${rank}</div>${avatar(r)}
+    <div class="grow"><b>${esc(r.username)}${me ? ' (you)' : ''}</b><div class="tiny muted">${r.days} days · ${r.prs} PRs · ${kg(r.volume)}${r.drops ? ` · <span class="red">${r.drops} drop${r.drops === 1 ? '' : 's'}</span>` : ''}</div></div>
+    <div class="g ${r.points > 0 ? 'lime' : r.points < 0 ? 'red' : 'dim'}">${r.points}<span class="tiny muted"> pts</span></div></button>`;
 }
 function fame(rows) {
   if (!rows.length) return '';
-  const by = (f, dir = -1, filt = () => true) => rows.filter(filt).slice().sort((a, b) => dir * ((f(a) ?? -1e9) - (f(b) ?? -1e9)))[0];
-  const card = (ttl, r, val, cls = '') => r ? `<a href="#/user/${r.user_id}" class="card ${cls}"><div class="ttl">${ttl}</div><div class="who">${avatar(r, 'sm')}${esc(r.username)}</div><div class="val">${val}</div></a>` : '';
-  const gains = by(r => r.gain_pct, -1, r => r.gain_pct != null);
-  const prs = by(r => r.prs, -1, r => r.prs > 0);
-  const days = by(r => r.days, -1, r => r.days > 0);
-  const vol = by(r => +r.volume, -1, r => r.volume > 0);
+  const by = (f, filt = () => true) => rows.filter(filt).slice().sort((a, b) => (f(b) ?? -1e9) - (f(a) ?? -1e9))[0];
+  const card = (ttl, r, val, cls = '') => r ? `<button class="card ${cls}" data-act="ptsInfo" data-u="${r.user_id}"><div class="ttl">${ttl}</div><div class="who">${avatar(r, 'sm')}${esc(r.username)}</div><div class="val">${val}</div></button>` : '';
+  const pts = by(r => r.points, r => r.points > 0);
+  const prs = by(r => r.prs, r => r.prs > 0);
+  const days = by(r => r.days, r => r.days > 0);
+  const vol = by(r => +r.volume, r => r.volume > 0);
+  const cons = by(r => r.consistency_pts, r => r.consistency_pts > 0);
   const least = rows.slice().sort((a, b) => a.days - b.days || (new Date(a.last_workout || 0) - new Date(b.last_workout || 0)))[0];
-  const drops = by(r => r.drops, -1, r => r.drops > 0);
-  const worst = by(r => r.gain_pct, 1, r => r.gain_pct != null);
+  const drops = by(r => r.drops, r => r.drops > 0);
   const ghost = rows.slice().sort((a, b) => new Date(a.last_workout || 0) - new Date(b.last_workout || 0))[0];
   return `<div class="fame">
-    ${card('👑 Most gains', gains, pct(gains?.gain_pct), 'hl')}
+    ${card('👑 Most points', pts, (pts?.points || 0) + ' pts', 'hl')}
     ${card('🔥 Most PRs', prs, (prs?.prs || 0) + ' PRs', 'orange')}
     ${card('📅 Most days', days, (days?.days || 0) + ' days', 'blue')}
     ${card('🏗️ Hardest worker', vol, kg(vol?.volume), 'teal')}
+    ${cons ? card('📆 Most consistent', cons, cons.consistency_pts / 25 + (cons.consistency_pts === 25 ? ' strong week' : ' strong weeks'), 'purple') : ''}
     ${card('🛋️ Least days', least, least?.days + ' days', 'warn')}
     ${card('📉 Went backwards', drops, (drops?.drops || 0) + (drops?.drops === 1 ? ' drop' : ' drops'), 'pink')}
-    ${worst && worst.user_id !== gains?.user_id ? card('🐢 Smallest gains', worst, pct(worst.gain_pct), 'gold') : ''}
-    ${card('👻 Ghost', ghost, ghost?.last_workout ? daysSince(ghost.last_workout) + ' days since last' : 'never trained', 'purple')}
+    ${card('👻 Ghost', ghost, ghost?.last_workout ? daysSince(ghost.last_workout) + ' days since last' : 'never trained', 'gold')}
   </div>`;
 }
+A.ptsInfo = el => {
+  const r = (S.boardRows || []).find(x => x.user_id === el.dataset.u); if (!r) return location.hash = '#/user/' + el.dataset.u;
+  modal(`<div class="row">${avatar(r)}<div><h2 style="margin:0">${esc(r.username)}</h2><div class="small muted">${S.board.period === 'week' ? 'This week' : 'All time'}</div></div>
+      <div class="grow"></div><div class="display lime" style="font-size:30px">${r.points}<span class="tiny muted"> pts</span></div></div>
+    <div class="card mt">${POINT_RULES.map(([k, ic, name]) => r[k] ? `<div class="wk-ex"><span>${ic} ${name}</span><b class="${k === 'drop_pts' ? 'red' : 'lime'}">${k === 'drop_pts' ? '−' : '+'}${r[k]}</b></div>` : '').join('') || '<p class="small muted">No points yet.</p>'}</div>
+    <div class="row">${btn('View profile', 'go', '', 'grow', `data-to="#/user/${r.user_id}"`)}${btn('Close', 'closeModal', '', 'primary grow')}</div>`);
+};
 A.boardPeriod = el => { S.board.period = el.dataset.v; lsSet('lb_period', el.dataset.v); render(); };
 A.boardScope = el => { S.board.scope = el.dataset.v; render(); };
-A.howRank = () => modal(`<h2>How the leaderboard works</h2>
-  <p class="muted mt">We don’t care who’s biggest. We care who’s <b class="lime">improving the most</b>.</p>
-  <div class="card mt"><b>1. Every set becomes a strength score</b><p class="small muted mt">We estimate your 1-rep max: weight × (1 + reps ÷ 30). So 60kg × 10 counts more than 60kg × 5.</p></div>
-  <div class="card"><b>2. We compare you to YOU</b><p class="small muted mt"><b>This week:</b> your best this week vs your best before this week.<br><b>All time:</b> your best ever vs your very first session.</p></div>
-  <div class="card"><b>3. Average % gain = your score</b><p class="small muted mt">Across every exercise you’ve done more than once.</p></div>
-  <div class="card hl"><b>Example</b><p class="small mt">Sam benches 50kg → 70kg = <b class="lime">+40%</b><br>Alex benches 80kg → 90kg = <b>+12.5%</b><br>Sam ranks higher — even though Alex lifts more. 💪</p></div>
-  <p class="small muted">Go backwards by more than 5% and everyone gets notified. 😬</p>
+A.howRank = () => modal(`<h2>How points work</h2>
+  <p class="muted mt">Everyone can win. It’s about showing up and improving, not who’s biggest.</p>
+  <div class="card mt">${POINT_RULES.map(([, ic, name, rule]) => `<div class="wk-ex" style="align-items:flex-start"><span style="min-width:44%"><b>${ic} ${name}</b></span><span class="small muted" style="text-align:right">${rule}</span></div>`).join('')}</div>
+  <p class="small muted">A slightly weaker day costs nothing. Only a real drop (more than 5%) loses points, and everyone gets told. 😬</p>
   <button class="btn primary full mt" onclick="closeModal()">Got it</button>`);
 
 /* ================== SOCIAL ================== */
@@ -1274,7 +1400,7 @@ async function viewWorkout(id) {
     <div class="stats three mt mb"><div class="stat"><div class="v">${kg(w.total_volume)}</div><div class="l">Volume</div></div>
       <div class="stat"><div class="v">${w.lifts.filter(l => l.completed).length}/${w.lifts.length}</div><div class="l">Sets done</div></div>
       <div class="stat"><div class="v">${w.duration_min || '–'}</div><div class="l">Minutes</div></div></div>
-    ${Object.entries(groups).map(([ex, ls]) => `<div class="card"><h3>${esc(ex)}</h3>
+    ${Object.entries(groups).map(([ex, ls]) => `<div class="card"><h3>${exLink(ex)}</h3>
       ${ls.map(l => `<div class="wk-ex"><span class="muted">Set ${l.set_no}</span><span>${+l.weight}kg × ${l.reps}${l.target_reps ? ` <span class="dim">/ ${l.target_reps}</span>` : ''} ${l.completed ? '<span class="lime">✓</span>' : '<span class="red" title="Not completed">✗</span>'}</span></div>`).join('')}</div>`).join('')}
     ${w.notes ? `<div class="card"><div class="tiny muted">NOTES</div><p class="mt">${esc(w.notes)}</p></div>` : ''}
     <div class="card"><div class="tiny muted">REACT</div>${rxBar(w)}<div class="tip mt">Tap an emoji to react — ${mine ? 'that’s your workout!' : 'they get notified.'}</div></div>
@@ -1288,14 +1414,14 @@ A.delWorkout = async el => {
 };
 async function peopleList() {
   await loadProfiles();
-  const rows = await leaderboard(null, null);
-  const byId = Object.fromEntries(rows.map(r => [r.user_id, r]));
+  const [rows, fr] = await Promise.all([points('public', null), points('friends', null)]);
+  const byId = Object.fromEntries(rows.concat(fr).map(r => [r.user_id, r]));
   const people = Object.values(S.profiles).filter(p => p.id !== S.me.id).sort((a, b) => (byId[b.id]?.days || 0) - (byId[a.id]?.days || 0));
   if (!people.length) return `<div class="empty"><span class="e">🫥</span>It’s just you so far. Send the link to your mates!</div>
     ${btn('Copy invite link', 'invite', 'Copies the app link so you can send it to friends.', 'primary full')}`;
   return `<div class="tiny muted mb">${people.length + 1} real people on Outlift (including you). No bots. Ever.</div>
     ${people.map(p => { const r = byId[p.id] || {}; const d = daysSince(r.last_workout);
-      return `<div class="card"><a href="#/user/${p.id}" class="row">${avatar(p)}<div class="grow"><b>${esc(p.username)}</b><div class="tiny muted">${r.days || 0} days trained · ${d == null ? 'never trained' : d === 0 ? 'trained today 💪' : `last trained ${d}d ago`}</div></div><span class="${r.gain_pct > 0 ? 'lime' : 'muted'} display" style="font-size:22px">${pct(r.gain_pct)}</span></a>
+      return `<div class="card"><a href="#/user/${p.id}" class="row">${avatar(p)}<div class="grow"><b>${esc(p.username)}</b><div class="tiny muted">${r.days || 0} days trained · ${d == null ? 'never trained' : d === 0 ? 'trained today 💪' : `last trained ${d}d ago`}</div></div><span class="${r.points > 0 ? 'lime' : 'muted'} display" style="font-size:20px">${p.is_public || byId[p.id] ? (r.points || 0) + ' pts' : '🔒'}</span></a>
       <div class="row mt" style="align-items:flex-start">${btn('💬 Message', 'go', 'Opens a private chat.', 'sm grow', `data-to="#/chat/${p.id}"`)}${btn('👊 Nudge', 'nudge', 'Sends them a “get to the gym” notification.', 'sm grow', `data-id="${p.id}"`)}</div></div>`; }).join('')}
     ${btn('Copy invite link', 'invite', 'Copies the app link so you can send it to friends.', 'full')}`;
 }
@@ -1382,12 +1508,13 @@ async function viewUser(id) {
     q(sb.from('lifts').select('exercise,weight,reps,e1rm,completed,created_at').eq('user_id', id).eq('completed', true).order('created_at').limit(5000)),
     q(sb.from('user_badges').select('*').eq('user_id', id)),
     q(sb.from('goals').select('*').eq('user_id', id).order('created_at', { ascending: false })),
-    leaderboard(null, null), leaderboard(weekAgoISO(), null),
+    points(p.is_public ? 'public' : 'friends', null), points(p.is_public ? 'public' : 'friends', weekAgoISO()),
   ]);
-  const ranked = allRows.filter(r => r.gain_pct != null);
+  const locked = !me && !allRows.some(r => r.user_id === id);
+  const ranked = allRows.filter(r => r.points > 0);
   const row = allRows.find(r => r.user_id === id) || {}, wrow = weekRows.find(r => r.user_id === id) || {};
   const rank = ranked.findIndex(r => r.user_id === id) + 1;
-  const split = S.splits.find(s => s.id === p.active_split_id), gym = S.gyms.find(g => g.id === p.gym_id);
+  const split = S.splits.find(s => s.id === p.active_split_id);
   const earned = Object.fromEntries(badges.map(b => [b.badge, b]));
   // personal records per exercise
   const prs = {};
@@ -1401,16 +1528,17 @@ async function viewUser(id) {
   after.push(() => { $$('.progress i').forEach(i => requestAnimationFrame(() => i.style.width = i.dataset.w)); if (chartEx) drawChart(lifts, chartEx); });
   return `<div class="center">${avatar(p, 'lg').replace('class="av lg"', 'class="av lg" style="margin:0 auto"')}
       <h1 class="mt">${esc(p.username)}</h1>
-      <div class="small muted">${gym ? esc(gym.emoji + ' ' + gym.name) + ' · ' : ''}${split ? 'Following ' + esc(split.name) : 'No split yet'}</div>
+      <div class="small muted">${p.region ? '📍 ' + esc(p.region) + ' · ' : ''}${split ? 'Following ' + esc(split.name) : 'No split yet'}${p.is_public ? '' : ' · 🔒 Private'}</div>
       ${p.bio ? `<p class="mt">${esc(p.bio)}</p>` : ''}
       <div class="small mt ${lastD != null && lastD >= 4 ? 'red' : 'muted'}">${lastD == null ? 'Hasn’t trained yet' : lastD === 0 ? 'Trained today 💪' : `Last trained ${lastD} day${lastD > 1 ? 's' : ''} ago${lastD >= 4 ? ' 😴' : ''}`}</div></div>
     <div class="row mt" style="align-items:flex-start">${me
       ? btn('✏️ Edit profile', 'editProfile', 'Change avatar, bio and bodyweight.', 'sm grow') + btn('⚙️ Settings', 'go', 'Notifications, tips, sounds, log out.', 'sm grow', 'data-to="#/settings"')
       : btn('💬 Message', 'go', 'Opens a private chat.', 'primary sm grow', `data-to="#/chat/${id}"`) + btn('👊 Nudge', 'nudge', 'Tells them to get to the gym.', 'sm grow', `data-id="${id}"`)}</div>
+    ${locked ? `<div class="card blue mt2 center"><div style="font-size:40px">🔒</div><h3>${esc(p.username)}’s workouts are private</h3><p class="small muted mt">Join a group with them to see their workouts and progress.</p></div>` : ''}
     <div class="stats mt2">
       <div class="stat"><div class="v ${rank === 1 ? 'gold' : ''}">${rank ? '#' + rank : '—'}</div><div class="l">Rank</div></div>
-      <div class="stat"><div class="v ${row.gain_pct > 0 ? 'lime' : ''}">${pct(row.gain_pct)}</div><div class="l">All-time gain</div></div>
-      <div class="stat"><div class="v ${wrow.gain_pct > 0 ? 'lime' : wrow.gain_pct < 0 ? 'red' : ''}">${pct(wrow.gain_pct)}</div><div class="l">This week</div></div>
+      <div class="stat"><div class="v lime">${row.points || 0}</div><div class="l">Total pts</div></div>
+      <div class="stat"><div class="v ${wrow.points > 0 ? 'lime' : wrow.points < 0 ? 'red' : ''}">${wrow.points || 0}</div><div class="l">Pts this wk</div></div>
       <div class="stat"><div class="v">${row.prs || 0}</div><div class="l">PRs</div></div>
       <div class="stat"><div class="v">${workouts.length}</div><div class="l">Workouts</div></div>
       <div class="stat"><div class="v">${totalDays}</div><div class="l">Days total</div></div>
@@ -1429,12 +1557,12 @@ async function viewUser(id) {
       <datalist id="exList">${EXERCISES.map(e => `<option value="${e}">`).join('')}</datalist>
       <div class="mt">${btn('🎯 Set goal', 'addGoal', 'Adds a target. Hit that weight in a workout to smash it.', 'primary full')}</div></div>` : ''}
     <div class="sec-title"><h2>Personal records</h2></div>
-    ${Object.values(prs).length ? `<div class="card">${Object.values(prs).sort((a, b) => b.e1rm - a.e1rm).map(l => `<div class="wk-ex"><span>${esc(l.exercise)}</span><span><b>${+l.weight}kg × ${l.reps}</b> <span class="dim tiny">≈${kg(l.e1rm)} max</span></span></div>`).join('')}</div>` : '<p class="small muted">No lifts logged yet.</p>'}
+    ${Object.values(prs).length ? `<div class="card">${Object.values(prs).sort((a, b) => b.e1rm - a.e1rm).map(l => `<div class="wk-ex"><span>${exLink(l.exercise.trim())}</span><span><b>${+l.weight}kg × ${l.reps}</b> <span class="dim tiny">≈${kg(l.e1rm)} max</span></span></div>`).join('')}</div>` : '<p class="small muted">No lifts logged yet.</p>'}
     ${chartEx ? `<div class="sec-title"><h2>Progress</h2></div><div class="card"><div class="chip-list mb">${exNames.map(n => `<button class="chip ${n === chartEx ? 'on' : ''}" data-act="chartEx" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>
       <svg class="chart" id="chart"></svg><div class="tip mt">Estimated 1-rep max for each session. Tap an exercise above to switch.</div></div>` : ''}
     <div class="sec-title"><h2>Workout history</h2></div>
     ${workouts.slice(0, 20).map(w => `<a href="#/workout/${w.id}" class="lrow"><div class="grow"><b>${esc(w.day_name || 'Workout')}</b><div class="tiny muted">${new Date(w.performed_on + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · ${kg(w.total_volume)}</div></div><span>›</span></a>`).join('') || '<p class="small muted">No workouts yet.</p>'}
-    ${me ? `<div class="mt2">${btn('🏠 Gyms', 'go', 'Join a gym crew to get your own mini leaderboard.', 'full', 'data-to="#/gyms"')}</div>` : ''}`;
+    ${me ? `<div class="mt2">${btn('👥 My groups', 'go', 'Crews, gyms and coaches you train with.', 'full', 'data-to="#/groups"')}</div>` : ''}`;
 }
 A.chartEx = el => { S.chartEx = el.dataset.n; render(); };
 function drawChart(lifts, ex) {
@@ -1487,32 +1615,204 @@ A.saveProfile = async () => {
   Object.assign(S.me, upd); closeModal(); toast('Profile saved', '', 'pr'); render();
 };
 
-/* ================== GYMS ================== */
-async function viewGyms() {
-  await Promise.all([loadGyms(), loadProfiles()]);
-  const members = id => Object.values(S.profiles).filter(p => p.gym_id === id);
-  return `<a href="#/profile" class="small muted">← Profile</a><h1 class="mt">Gyms</h1>
-    <p class="help mt">Make a crew for your actual gym (or your group chat). Members get their own “My gym” leaderboard. You can be in one gym at a time.</p>
-    ${S.gyms.map(g => { const ms = members(g.id), mine = S.me.gym_id === g.id;
-      return `<div class="card ${mine ? 'hl' : ''}"><div class="row"><div class="av">${esc(g.emoji)}</div><div class="grow"><h3>${esc(g.name)}</h3><div class="tiny muted">${esc(g.location || '')}${g.location ? ' · ' : ''}${ms.length} member${ms.length === 1 ? '' : 's'}</div></div>${mine ? '<span class="pill lime">YOUR GYM</span>' : ''}</div>
-        ${g.description ? `<p class="small muted mt">${esc(g.description)}</p>` : ''}
-        <div class="row wrap mt">${ms.slice(0, 12).map(p => `<a href="#/user/${p.id}" title="${esc(p.username)}">${avatar(p, 'sm')}</a>`).join('')}</div>
-        <div class="mt">${mine ? btn('Leave gym', 'joinGym', 'Removes you from this crew.', 'sm danger', 'data-id=""') : btn('Join gym', 'joinGym', 'Join this crew and compete on its leaderboard.', 'primary sm', `data-id="${g.id}"`)}</div></div>`; }).join('') || '<div class="empty"><span class="e">🏗️</span>No gyms yet. Make the first one!</div>'}
-    <div class="card"><h3>Create a gym</h3>
-      <div class="row mt"><input class="inp" id="gEmoji" value="🏋️" maxlength="4" style="max-width:64px;text-align:center"><input class="inp" id="gName" placeholder="Gym name" maxlength="40"></div>
-      <input class="inp mt" id="gLoc" placeholder="Location (optional)"><input class="inp mt" id="gDesc" placeholder="Description (optional)">
-      <div class="mt">${btn('Create & join', 'createGym', 'Creates the gym and puts you in it.', 'primary full')}</div></div>`;
+/* ================== GROUPS ================== */
+const KIND = { crew: ['👥', 'Crew', 'Friends or family training together'], gym: ['🏠', 'Gym', 'Everyone who trains at one gym'], coach: ['🧑‍🏫', 'Coaching', 'A PT or physio with their clients'] };
+const inviteLink = code => location.origin + location.pathname + '#/join/' + code;
+async function viewGroups() {
+  await loadProfiles();
+  const [mine, pub] = await Promise.all([myGroups(), q(sb.from('gyms').select('*').eq('is_public', true).order('created_at'))]);
+  const counts = {};
+  (await q(sb.from('group_members').select('group_id'))).forEach(m => counts[m.group_id] = (counts[m.group_id] || 0) + 1);
+  const card = (g, joined) => `<div class="card ${joined ? 'hl' : ''}"><button class="row grow" style="width:100%;text-align:left" data-act="go" data-to="#/group/${g.id}">
+      <div class="av">${esc(g.emoji)}</div><div class="grow"><h3>${esc(g.name)}</h3><div class="tiny muted">${KIND[g.kind]?.[1] || 'Crew'} · ${counts[g.id] || 0} member${counts[g.id] === 1 ? '' : 's'}${g.location ? ' · ' + esc(g.location) : ''}${g.is_public ? ' · 🌍 Open' : ' · 🔒 Invite only'}</div></div><span class="big-arrow">›</span></button>
+      ${joined ? '' : `<div class="mt">${btn('Join', 'joinPublic', 'Join this group and see each other’s workouts.', 'primary full', `data-id="${g.id}"`)}</div>`}</div>`;
+  const mineIds = new Set(mine.map(g => g.id));
+  return `<h1>Groups</h1><p class="help mt">Train with your crew, your gym or your coach. Everyone in a group can see each other’s workouts and has their own leaderboard, even if their profile is private.</p>
+    <div class="sec-title"><h2>Your groups</h2></div>
+    ${mine.map(g => card(g, true)).join('') || '<p class="small muted mb">You’re not in any groups yet.</p>'}
+    <div class="card blue"><h3>🔑 Got an invite code?</h3>
+      <div class="row mt"><input class="inp" id="joinCode" placeholder="e.g. 7F3A2C" maxlength="6" autocapitalize="characters" style="text-transform:uppercase"><button class="btn primary" data-act="joinCode">Join</button></div>
+      <div class="tip mt">Ask whoever made the group for their 6-character code or invite link.</div></div>
+    ${pub.filter(g => !mineIds.has(g.id)).length ? `<div class="sec-title"><h2>Open groups</h2></div>${pub.filter(g => !mineIds.has(g.id)).map(g => card(g, false)).join('')}` : ''}
+    <div class="sec-title"><h2>Start a group</h2></div>
+    <div class="card"><div class="row"><input class="inp" id="gEmoji" value="💪" maxlength="4" style="max-width:68px;text-align:center;font-size:22px"><input class="inp" id="gName" placeholder="Group name" maxlength="40"></div>
+      <label class="f">What kind of group?</label>
+      <div class="seg" id="gKind">${Object.entries(KIND).map(([k, v], i) => `<button class="${i === 0 ? 'on' : ''}" data-act="pickKind" data-k="${k}">${v[0]} ${v[1]}</button>`).join('')}</div>
+      <div class="tip mt" id="gKindTip">${KIND.crew[2]}</div>
+      <input class="inp mt" id="gLoc" placeholder="Location (optional, e.g. South Morang)">
+      <div class="row between mt"><div><b class="small">Open to anyone</b><div class="tip">Off = invite code only</div></div><button class="btn sm" data-act="toggleOpen" id="gOpen" data-v="0">OFF</button></div>
+      <div class="mt">${btn('Create group', 'createGroup', 'You’ll get an invite code to share.', 'primary full')}</div></div>`;
 }
-A.joinGym = async el => {
-  const id = el.dataset.id || null;
-  await q(sb.from('profiles').update({ gym_id: id }).eq('id', S.me.id));
-  S.me.gym_id = id; toast(id ? 'Joined gym 🏠' : 'Left gym', '', id ? 'pr' : ''); render();
+A.pickKind = el => { $$('#gKind button').forEach(b => b.classList.toggle('on', b === el)); $('#gKindTip').textContent = KIND[el.dataset.k][2]; };
+A.toggleOpen = el => { const on = el.dataset.v !== '1'; el.dataset.v = on ? '1' : '0'; el.textContent = on ? 'ON' : 'OFF'; el.classList.toggle('primary', on); };
+A.createGroup = async () => {
+  const name = $('#gName').value.trim(); if (name.length < 2) return toast('Give your group a name', '', 'loss');
+  const kind = $('#gKind .on')?.dataset.k || 'crew';
+  const g = await q(sb.from('gyms').insert({ name, emoji: $('#gEmoji').value.trim() || '💪', location: $('#gLoc').value.trim() || null, owner_id: S.me.id, kind, is_public: $('#gOpen').dataset.v === '1' }).select().single());
+  boom(.6); toast('Group created! 🎉', 'Share the invite code with your crew.', 'pr'); location.hash = '#/group/' + g.id;
 };
-A.createGym = async () => {
-  const name = $('#gName').value.trim(); if (name.length < 2) return toast('Give your gym a name', '', 'loss');
-  const g = await q(sb.from('gyms').insert({ name, emoji: $('#gEmoji').value.trim() || '🏋️', location: $('#gLoc').value.trim(), description: $('#gDesc').value.trim(), owner_id: S.me.id }).select().single());
-  await q(sb.from('profiles').update({ gym_id: g.id }).eq('id', S.me.id));
-  S.me.gym_id = g.id; boom(.5); toast('Gym created!', 'Invite your mates.', 'pr'); render();
+async function joinWith(params) {
+  const g = await q(sb.rpc('join_group', params));
+  boom(.5); toast('You joined ' + g.name + ' 🙌', '', 'pr'); location.hash = '#/group/' + g.id;
+}
+A.joinCode = () => { const c = $('#joinCode').value.trim(); if (c.length < 4) return toast('Enter the invite code', '', 'loss'); return joinWith({ p_code: c }); };
+A.joinPublic = el => joinWith({ p_group: el.dataset.id });
+async function viewJoin(code) {
+  try { await joinWith({ p_code: code }); } catch (e) { toast('Couldn’t join', e.message, 'loss'); location.hash = '#/groups'; }
+  return '<div class="skel"></div>';
+}
+async function viewGroup(id) {
+  await loadProfiles();
+  const g = await q(sb.from('gyms').select('*').eq('id', id).maybeSingle());
+  if (!g) return '<div class="empty"><span class="e">🔒</span>This group is invite-only. Ask for the code.</div>';
+  const members = await q(sb.from('group_members').select('*').eq('group_id', id));
+  const myRole = members.find(m => m.user_id === S.me.id)?.role;
+  if (!myRole) return `<a href="#/groups" class="back">← Groups</a><h1 class="mt">${esc(g.emoji + ' ' + g.name)}</h1>
+    <div class="card mt">${btn('Join this group', 'joinPublic', 'You’ll see each other’s workouts and get a group leaderboard.', 'primary big', `data-id="${id}"`)}</div>`;
+  const rows = await points('group', weekAgoISO(), id);
+  S.boardRows = rows; S.board.period = 'week';
+  const lead = myRole === 'owner' || myRole === 'coach';
+  const roleTag = r => r === 'owner' ? '<span class="pill gold">OWNER</span>' : r === 'coach' ? '<span class="pill">COACH</span>' : '';
+  return `<a href="#/groups" class="back">← Groups</a>
+    <div class="row mt"><div class="av lg">${esc(g.emoji)}</div><div class="grow"><h1>${esc(g.name)}</h1><div class="small muted">${KIND[g.kind]?.[1]} · ${members.length} members${g.location ? ' · 📍 ' + esc(g.location) : ''}</div></div></div>
+    <div class="card blue mt"><div class="row between"><div><div class="tiny muted">INVITE CODE</div><div class="display" style="font-size:30px;letter-spacing:3px">${esc(g.invite_code)}</div></div>
+      ${btn('📤 Share invite', 'shareInvite', '', 'primary', `data-code="${esc(g.invite_code)}" data-name="${esc(g.name)}"`)}</div>
+      <div class="tip mt">Send the link or code. Anyone who opens it joins straight away.</div></div>
+    ${g.kind !== 'crew' && lead ? `<div class="card purple">${btn('🔳 Make QR codes for machines', 'go', 'Print codes for each machine. Members scan to see how to use it and log it.', 'full', 'data-to="#/qr"')}</div>` : ''}
+    <div class="sec-title"><h2>This week</h2><button class="btn sm" data-act="howRank">How points work</button></div>
+    ${rows.map((r, i) => lrow(r, i + 1, i)).join('')}
+    <div class="sec-title"><h2>Members</h2></div>
+    ${members.map(m => { const p = prof(m.user_id); return `<div class="card"><div class="row"><a href="#/user/${m.user_id}" class="row grow">${avatar(p)}<b>${esc(p.username)}</b> ${roleTag(m.role)}</a>
+      ${lead && m.user_id !== S.me.id ? `<button class="btn sm" data-act="assignPlan" data-u="${m.user_id}">📋 Assign plan</button>` : ''}</div>
+      ${myRole === 'owner' && m.user_id !== S.me.id ? `<button class="btn sm ghost mt red" data-act="kick" data-g="${id}" data-u="${m.user_id}">Remove from group</button>` : ''}</div>`; }).join('')}
+    ${lead ? '<p class="tip">“Assign plan” sends a member a split to follow. They get a notification and can accept it from their home screen.</p>' : ''}
+    <div class="mt2">${btn(myRole === 'owner' ? 'Leave group (you’re the owner)' : 'Leave group', 'leaveGroup', 'You’ll stop seeing their private workouts.', 'danger full', `data-g="${id}"`)}</div>`;
+}
+A.shareInvite = async el => {
+  const url = inviteLink(el.dataset.code);
+  try { if (navigator.share) await navigator.share({ title: 'Join ' + el.dataset.name + ' on Outlift', text: `Join my group on Outlift 💪 Code: ${el.dataset.code}`, url }); else { await navigator.clipboard.writeText(url); toast('Invite link copied!', url, 'pr'); } }
+  catch { toast('Invite code: ' + el.dataset.code, url); }
+};
+A.leaveGroup = async el => {
+  if (!await confirmBox('Leave this group?', 'You’ll stop seeing private workouts from its members.', 'Leave')) return;
+  await q(sb.from('group_members').delete().eq('group_id', el.dataset.g).eq('user_id', S.me.id));
+  toast('Left group'); location.hash = '#/groups';
+};
+A.kick = async el => {
+  if (!await confirmBox('Remove member?', 'They can rejoin with the invite code.', 'Remove')) return;
+  await q(sb.from('group_members').delete().eq('group_id', el.dataset.g).eq('user_id', el.dataset.u)); render();
+};
+A.assignPlan = el => {
+  const u = prof(el.dataset.u);
+  const m = modal(`<h2>Assign a plan to ${esc(u.username)}</h2><p class="small muted mt">They’ll get a notification and a card on their home screen to accept it.</p>
+    <label class="f">Plan</label><select class="inp" id="apSplit">${S.splits.map(s => `<option value="${s.id}">${esc(s.name)}${s.owner_id ? ' (by ' + esc(prof(s.owner_id).username) + ')' : ''}</option>`).join('')}</select>
+    <div class="tip mt">Need something custom? Build it in Train → Browse splits → Create your own, then assign it here.</div>
+    <label class="f">Note (optional)</label><textarea class="inp" id="apNote" maxlength="500" placeholder="e.g. Go light on squats this week, focus on depth."></textarea>
+    <div class="mt">${btn('Send plan', 'sendPlan', '', 'primary full', `data-u="${el.dataset.u}"`)}</div>`);
+};
+A.sendPlan = async el => {
+  await q(sb.from('assignments').insert({ coach_id: S.me.id, client_id: el.dataset.u, split_id: $('#apSplit').value, note: $('#apNote').value.trim() }));
+  closeModal(); toast('Plan sent 📋', 'They’ve been notified.', 'pr');
+};
+
+/* ================== EXERCISE SCREEN ================== */
+const exLink = name => `<button class="exlink" data-act="exInfo" data-n="${esc(name)}">${esc(name)} <span class="i">ⓘ</span></button>`;
+let stopAnim = null;
+function openExercise(name, opts = {}) {
+  closeExercise();
+  const info = exerciseInfo(name);
+  const eq = EQUIP[info.equip] || EQUIP.barbell;
+  const inWorkout = !!S.active && location.hash === '#/log';
+  const backLabel = inWorkout ? '← Back to workout' : '← Back';
+  const el = document.createElement('div');
+  el.id = 'exScreen';
+  el.innerHTML = `<div class="ex-top"><button class="btn sm" data-act="closeEx">${backLabel}</button><span class="pill">${esc(eq[0])}</span></div>
+    <div class="ex-body"><h1>${esc(name)}</h1><div class="muted mt">Works: <b>${esc(info.muscles)}</b></div>
+      <div class="anim-card">${exerciseSvg(info)}<div class="tiny muted center">Watch the movement · loops automatically</div></div>
+      <h2 class="mt2">How to do it</h2>
+      <ol class="steps">${info.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+      <div class="card gold mt"><b>💡 Coach tip</b><p class="mt">${esc(info.tip)}</p></div>
+      <div class="card blue"><b>${esc(eq[0])}: what is it?</b><p class="mt">${esc(eq[1])}</p></div>
+      <a class="btn full" href="https://www.youtube.com/results?search_query=${encodeURIComponent('how to do ' + name + ' proper form')}" target="_blank" rel="noopener">▶️ Watch real videos on YouTube</a>
+      <div class="tip mt">Opens YouTube with form videos for this exercise.</div>
+      ${opts.fromQR ? `<div class="mt2">${btn(S.active ? '➕ Add to my workout' : '🏋️ Start a workout with this', 'qrAdd', S.active ? 'Adds it to the workout you’re doing now.' : 'Starts a quick workout with this exercise ready to log.', 'primary big', `data-n="${esc(name)}"`)}</div>` : ''}
+      <div style="height:90px"></div></div>
+    <div class="ex-foot"><button class="btn primary big" data-act="closeEx">${inWorkout ? '💪 Back to workout' : '← Back'}</button></div>`;
+  document.body.appendChild(el);
+  document.body.classList.add('noscroll');
+  stopAnim = startAnimation(el.querySelector('svg.exanim'), info);
+}
+function closeExercise() {
+  if (stopAnim) stopAnim(); stopAnim = null;
+  $('#exScreen')?.remove(); document.body.classList.remove('noscroll');
+}
+A.exInfo = el => openExercise(el.dataset.n);
+A.closeEx = () => closeExercise();
+A.qrAdd = async el => {
+  const name = el.dataset.n;
+  await ensureMyLifts();
+  if (!S.active) S.active = { split_id: null, day_name: 'Quick workout', started: Date.now(), notes: '', exercises: [] };
+  if (!S.active.exercises.some(e => e.name.toLowerCase() === name.toLowerCase())) S.active.exercises.push(mkExercise(name, 3, ''));
+  saveActive(); closeExercise(); toast(name + ' added 💪', 'Log your sets below.', 'pr'); location.hash = '#/log';
+};
+async function viewScan(name) {
+  S.pendingEx = { name: decodeURIComponent(name), opts: { fromQR: true } };
+  location.replace('#/' + (S.active ? 'log' : ''));
+  return '<div class="skel"></div>';
+}
+
+/* ================== QR CODES ================== */
+let qrPicked = new Set();
+async function viewQR() {
+  return `<a href="#/train" class="back">← Train</a><h1 class="mt">QR codes for machines</h1>
+    <p class="help mt">Pick exercises, print the codes and stick them on the machines. Anyone who scans one with their phone camera sees how to do it and can add it straight to their workout.</p>
+    <div class="row mb"><input class="inp" id="qrCustom" list="exList" placeholder="Add any exercise…"><button class="btn" data-act="qrAddCustom">Add</button></div>
+    <datalist id="exList">${EXERCISES.map(e => `<option value="${e}">`).join('')}</datalist>
+    <div class="card"><div class="qr-pick">${[...new Set([...EXERCISES, ...qrPicked])].map(e => `<label class="qr-opt"><input type="checkbox" data-qr="${esc(e)}" ${qrPicked.has(e) ? 'checked' : ''}> ${esc(e)}</label>`).join('')}</div></div>
+    ${btn('🖨️ Make printable QR codes', 'makeQR', 'Opens a print-ready sheet. Print it or save it as a PDF.', 'primary big')}
+    <div id="qrSheet" class="mt2"></div>`;
+}
+document.addEventListener('change', e => { const n = e.target.dataset?.qr; if (n) e.target.checked ? qrPicked.add(n) : qrPicked.delete(n); });
+A.qrAddCustom = () => { const n = $('#qrCustom').value.trim(); if (!n) return; qrPicked.add(n); render(); };
+function qrSvg(text) {
+  if (!window.qrcode) return '<div class="small red">QR library didn’t load. Check your connection.</div>';
+  const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  return qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+}
+A.makeQR = () => {
+  if (!qrPicked.size) return toast('Tick at least one exercise', '', 'loss');
+  const base = location.origin + location.pathname + '#/x/';
+  $('#qrSheet').innerHTML = `<div class="row between mb"><h2>Your QR codes</h2><button class="btn primary" onclick="window.print()">🖨️ Print</button></div>
+    <div class="qr-grid" id="printArea">${[...qrPicked].map(n => `<div class="qr-card">${qrSvg(base + encodeURIComponent(n))}<b>${esc(n)}</b><span>Scan with your camera · Outlift</span></div>`).join('')}</div>`;
+  $('#qrSheet').scrollIntoView({ behavior: 'smooth' });
+};
+
+/* ================== AI CHAT COACH ================== */
+const chatLog = () => { try { return JSON.parse(sessionStorage.getItem('lb_coach') || '[]'); } catch { return []; } };
+const saveChat = c => { try { sessionStorage.setItem('lb_coach', JSON.stringify(c.slice(-30))); } catch {} };
+const SUGGEST = ['What should I train today?', 'Why is my bench stuck?', 'Make me a 4-day plan', 'How do I fix my squat form?', 'How many sets should I do?'];
+async function viewCoach() {
+  const c = chatLog();
+  after.push(() => { window.scrollTo(0, document.body.scrollHeight); });
+  return `<div class="row between"><h1>🤖 Coach</h1>${c.length ? '<button class="btn sm" data-act="clearCoach">New chat</button>' : ''}</div>
+    <p class="help mt">Ask anything about training. The coach can see your split, recent workouts and goals, so answers are about <b>you</b>.</p>
+    <div class="bubbles" id="coachBubbles">${c.map(m => `<div class="bub ${m.role === 'user' ? 'mine' : 'coach'}">${esc(m.content)}</div>`).join('') || `<div class="card purple"><b>Try asking:</b><div class="col mt">${SUGGEST.map(s => `<button class="btn sm" data-act="askCoach" data-q="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`}</div>
+    <form class="composer" onsubmit="return false"><div class="in"><input class="inp" id="coachIn" placeholder="Ask the coach…" maxlength="1000" autocomplete="off"><button class="btn primary" data-act="askCoach" type="submit">Send</button></div></form>`;
+}
+A.clearCoach = () => { saveChat([]); render(); };
+A.askCoach = async el => {
+  const text = (el.dataset.q || $('#coachIn')?.value || '').trim(); if (!text) return;
+  if ($('#coachIn')) $('#coachIn').value = '';
+  const c = chatLog(); c.push({ role: 'user', content: text }); saveChat(c);
+  await render();
+  $('#coachBubbles').insertAdjacentHTML('beforeend', '<div class="bub coach typing" id="typing"><span></span><span></span><span></span></div>');
+  window.scrollTo(0, document.body.scrollHeight);
+  const { data, error } = await sb.functions.invoke('ai-chat', { body: { messages: c } });
+  let reply;
+  if (error) { reply = null; let msg = error.message; try { msg = (await error.context.json()).error || msg; } catch {} toast('Coach unavailable', msg, 'loss'); }
+  else reply = data.reply;
+  if (reply) { c.push({ role: 'assistant', content: reply }); saveChat(c); sound('message'); }
+  if (location.hash === '#/coach') render();
 };
 
 /* ================== SETTINGS ================== */
@@ -1524,6 +1824,11 @@ async function viewSettings() {
       <p class="tiny muted mt">You’ll be told when: someone PRs, takes #1, goes backwards, is dead last, smashes a goal, hasn’t trained in a week, messages, comments, reacts or nudges you — plus weekly results every Monday.</p>
       <div class="row mt" style="align-items:flex-start">${S.pushOn ? btn('Send test', 'testPush', 'Sends a test notification to this device.', 'sm grow') + btn('Turn off', 'pushOff', 'Stops push on this device.', 'sm danger grow')
         : btn('Turn on notifications', 'enablePush', 'Allow alerts even when the app is closed.', 'primary grow')}</div></div>
+    <div class="card"><h3>🔒 Privacy</h3>
+      ${toggleRowFn('Public profile', S.me.is_public, 'togglePublic', S.me.is_public ? 'Everyone on Outlift can see your workouts and you’re on the public leaderboard.' : 'Only people in your groups can see your workouts.')}
+      <label class="f">Your area (for the local leaderboard)</label>
+      <div class="row"><input class="inp" id="myRegion" value="${esc(S.me.region || '')}" placeholder="e.g. South Morang" maxlength="60"><button class="btn" data-act="saveRegion">Save</button></div>
+      <div class="tip mt">Public lifters with the same area appear on your 📍 Local board.</div></div>
     <div class="card"><h3>📲 Install the app</h3><p class="small muted mt">${isIOS() ? 'In Safari tap Share ⬆️ → Add to Home Screen. Needed for notifications on iPhone.' : 'In Chrome tap ⋮ → Install app / Add to Home screen. It’ll open full-screen like a real app.'}</p></div>
     <div class="card"><h3>Preferences</h3>
       ${toggleRow('Show button tips', 'tips', 'The little grey explanations under buttons.')}
@@ -1545,6 +1850,20 @@ async function viewSettings() {
       <input class="inp" id="rsPw" autocomplete="off" placeholder="6+ characters">
       <div class="mt">${btn('Reset their password', 'adminReset', 'Their old password stops working straight away.', 'primary full')}</div></div>` : ''}`;
 }
+function toggleRowFn(label, on, act, tip) {
+  return `<div class="row between mt"><div class="grow"><b class="small">${label}</b><div class="tip">${tip}</div></div><button class="btn sm ${on ? 'primary' : ''}" data-act="${act}">${on ? 'ON' : 'OFF'}</button></div>`;
+}
+A.togglePublic = async () => {
+  const v = !S.me.is_public;
+  if (!v && !await confirmBox('Go private?', 'Only people in your groups will see your workouts, and you’ll leave the public leaderboard.', 'Go private')) return;
+  await q(sb.from('profiles').update({ is_public: v }).eq('id', S.me.id));
+  S.me.is_public = v; toast(v ? 'Profile is public 🌍' : 'Profile is private 🔒', '', 'pr'); render();
+};
+A.saveRegion = async () => {
+  const region = $('#myRegion').value.trim() || null;
+  await q(sb.from('profiles').update({ region }).eq('id', S.me.id));
+  S.me.region = region; toast('Area saved 📍', region || 'Cleared', 'pr');
+};
 function toggleRow(label, key, tip) {
   return `<div class="row between mt"><div><b class="small">${label}</b><div class="tip">${tip}</div></div><button class="btn sm ${prefs[key] ? 'primary' : ''}" data-act="togglePref" data-k="${key}">${prefs[key] ? 'ON' : 'OFF'}</button></div>`;
 }
