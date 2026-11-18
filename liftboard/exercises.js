@@ -315,13 +315,20 @@ function exerciseInfo(name) {
 
 // ---------- real photos (start + finish position) ----------
 // EX_PHOTOS comes from ex/map.js. Exact name first, then the longest known name inside it ("Incline Barbell Bench Press" → bench press).
-function photoFor(name) {
-  if (typeof EX_PHOTOS === 'undefined') return null;
+function lookupExercise(map, name) {
+  if (!map) return null;
   const n = String(name || '').toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
   const single = n.replace(/(?<!s)s$/, ''); // "calf raises" → "calf raise", but "press" stays "press"
-  for (const v of [n, single]) if (EX_PHOTOS[v]) return EX_PHOTOS[v];
-  const keys = Object.keys(EX_PHOTOS).filter(k => n.includes(k) || single.includes(k)).sort((a, b) => b.length - a.length);
-  return keys.length ? EX_PHOTOS[keys[0]] : null;
+  for (const v of [n, single]) if (map[v]) return map[v];
+  const keys = Object.keys(map).filter(k => n.includes(k) || single.includes(k)).sort((a, b) => b.length - a.length);
+  return keys.length ? map[keys[0]] : null;
+}
+const photoFor = name => lookupExercise(typeof EX_PHOTOS === 'undefined' ? null : EX_PHOTOS, name);
+const videoFor = name => lookupExercise(typeof EX_VIDEOS === 'undefined' ? null : EX_VIDEOS, name);
+function videoHtml([id, channel], name) {
+  const src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${id}&rel=0&modestbranding=1`;
+  return `<div class="video-wrap"><iframe src="${src}" title="${name} demo video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>
+    <div class="tiny muted mt">Video by ${channel} on YouTube · plays muted, tap 🔊 for sound</div>`;
 }
 function photoAnimHtml(slug, name) {
   return `<div class="photo-anim" data-act="togglePhoto" title="Tap to pause">
