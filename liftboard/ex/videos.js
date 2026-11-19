@@ -1,28 +1,28 @@
 // Embedded YouTube demo videos per exercise: [videoId, channel]. Played inside Outlift via youtube-nocookie.com.
 const EX_VIDEOS = {
 "bench press": [
-"hWbUlkb5Ms4",
-"Jeff Nippard"
+"CjHIKDQ4RQo",
+"PureGym"
 ],
 "incline bench press": [
-"VFbjmiAAwJE",
-"Jim Stoppani, PhD"
+"2jFFCy8JBU8",
+"PureGym"
 ],
 "incline barbell bench press": [
-"i06buX4DNHQ",
-"TylerPath"
+"2jFFCy8JBU8",
+"PureGym"
 ],
 "incline dumbbell press": [
-"IP4oeKh1Sd4",
-"Max Euceda"
+"oZVCBM9f8Eo",
+"PureGym"
 ],
 "dumbbell bench press": [
-"1V3vpcaxRYQ",
-"Davis Diley"
+"AduT4Eq-iP0",
+"PureGym"
 ],
 "close grip bench press": [
-"NKHhj7SJsQA",
-"Renaissance Periodization"
+"DzA2xZhDGeo",
+"PureGym"
 ],
 "decline bench press": [
 "Kxt_5D2Rpgg",
@@ -33,180 +33,180 @@ const EX_VIDEOS = {
 "PureGym"
 ],
 "chest press": [
-"n8TOta_pfr4",
-"LIVESTRONG"
+"sqNwDkUU_Ps",
+"PureGym"
 ],
 "cable fly": [
 "QcTcWpkn_bw",
 "PureGym"
 ],
 "cable crossover": [
-"taI4XduLpTk",
-"LIVESTRONG"
+"QcTcWpkn_bw",
+"PureGym"
 ],
 "dumbbell fly": [
-"atcyT99YDeI",
-"Mind Pump TV"
+"Nhvz9EzdJ4U",
+"PureGym"
 ],
 "incline dumbbell fly": [
-"ajdFwa-qM98",
-"Howcast"
+"JSDpq14vCZ8",
+"PureGym"
 ],
 "pec deck": [
-"g3T7LsEeDWQ",
-"Davis Diley"
+"eGjt4lk6g34",
+"PureGym"
 ],
 "dips": [
-"ci5tcFgIntI",
-"Davis Diley"
+"2HYAeF6o7Bc",
+"PureGym"
 ],
 "tricep dips": [
-"y4gHJ8OjxTg",
-"Well+Good"
+"qrS6aa0aQ9I",
+"PureGym"
 ],
 "bench dips": [
 "0326dy_-CzM",
 "LIVESTRONG"
 ],
 "push up": [
-"c-lBErfxszs",
-"Davis Diley"
+"Env8gAr_QnE",
+"PureGym"
 ],
 "overhead press": [
-"wJlKUo2-P4o",
-"Alan Thrall (Untamed Strength)"
+"-5MmFTKLC-0",
+"PureGym"
 ],
 "military press": [
 "43GSKivZnw4",
 "PureGym"
 ],
 "shoulder press": [
-"OLePvpxQEGk",
-"Davis Diley"
+"TnhIyp4kmO8",
+"PureGym"
 ],
 "dumbbell shoulder press": [
-"OLePvpxQEGk",
-"Davis Diley"
+"aI2hGzsAMXs",
+"PureGym"
 ],
 "barbell shoulder press": [
-"G2qpTG1Eh40",
-"Renaissance Periodization"
+"Y0Bxr57uPbk",
+"PureGym"
 ],
 "arnold press": [
-"6Z15_WdXmVw",
-"Buff Dudes"
+"jeJttN2EWCo",
+"PureGym"
 ],
 "lateral raise": [
-"JIhbYYA1Q90",
-"Davis Diley"
+"z-kOn7flIZg",
+"PureGym"
 ],
 "front raise": [
-"gzDawZwDC6Y",
-"LIVESTRONG"
+"HN8HYJTOl8c",
+"PureGym"
 ],
 "rear delt fly": [
-"JL8nHvZcAK8",
-"Tri Cities Gold's Gym"
+"nlkF7_2O_Lw",
+"PureGym"
 ],
 "face pull": [
-"8686PLZB_1Q",
-"ATHLEAN-X™"
+"0Po47vvj9g4",
+"PureGym"
 ],
 "shrug": [
-"cJRVVxmytaM",
-"ScottHermanFitness"
+"larn3Asl6oM",
+"PureGym"
 ],
 "dumbbell shrug": [
-"g6qbq4Lf1FI",
-"LIVESTRONG"
+"_t3lrPI6Ns4",
+"Renaissance Periodization"
 ],
 "upright row": [
-"jaAV-rD45I0",
-"Buff Dudes"
+"8UvsRWUb0YU",
+"PureGym"
 ],
 "squat": [
-"MLoZuAkIyZI",
-"Davis Diley"
+"kRX2NfqM90g",
+"PureGym"
 ],
 "back squat": [
 "rrJIyZGlK8c",
 "PureGym"
 ],
 "front squat": [
-"gDQStEjb-sw",
-"DEMIC"
+"Q1Ypb8ZNzI4",
+"PureGym"
 ],
 "goblet squat": [
-"nfX7IFK9UNI",
-"National Academy of Sports Medicine (NASM)"
+"zBV3ceGyAxw",
+"PureGym"
 ],
 "box squat": [
-"nBc_2Jyp3tM",
-"Misfit Athletics"
+"rMEPHwNhQfo",
+"The Active Life"
 ],
 "leg press": [
-"nDh_BlnLCGc",
-"Jeff Nippard"
+"p5dCqF7wWUw",
+"PureGym"
 ],
 "hack squat": [
-"0tn5K9NlCfo",
-"Bodybuilding.com"
+"scs5XcsZuc8",
+"PureGym"
 ],
 "bulgarian split squat": [
-"uODWo4YqbT8",
-"Davis Diley"
+"TEXl2b3__S4",
+"PureGym"
 ],
 "split squat": [
-"lG3MsPmEQQk",
-"Squat University"
+"rlvpaDkc76g",
+"PureGym"
 ],
 "walking lunge": [
-"Pbmj6xPo-Hw",
-"Buff Dudes Workouts"
+"mAgbXQdd4LM",
+"PureGym"
 ],
 "lunge": [
-"3XDriUn0udo",
-"Mind Pump TV"
+"xrPteyQLGAo",
+"PureGym"
 ],
 "dumbbell lunge": [
-"3XDriUn0udo",
-"Mind Pump TV"
+"9gglI77Kzq8",
+"OPEX Fitness"
 ],
 "step up": [
-"elhu-WC1qk4",
-"[P]rehab"
+"DxUNi119Qzs",
+"PureGym"
 ],
 "leg extension": [
-"ztNBgrGy6FQ",
-"Jeff Nippard"
+"4ZDm5EbiFI8",
+"PureGym"
 ],
 "leg curl": [
-"t9sTSr-JYSs",
-"SilverSneakers"
+"QjNFk4F5dAs",
+"PureGym"
 ],
 "lying leg curl": [
-"nMRte-HF0zY",
-"Idris"
+"SbSNUXPRkc8",
+"PureGym"
 ],
 "seated leg curl": [
-"t9sTSr-JYSs",
-"SilverSneakers"
+"hhzTWndsgTc",
+"Life Fitness"
 ],
 "romanian deadlift": [
-"7j-2w4-P14I",
-"Nuffield Health"
+"zU-f6DMCdAI",
+"PureGym"
 ],
 "stiff leg deadlift": [
-"ie3SeV1kpCA",
-"Bodybuildergreats"
+"2fHE6zxftYw",
+"Runna"
 ],
 "hip thrust": [
-"pUdIL5x0fWg",
-"Nuffield Health"
+"aweBS7K71l8",
+"PureGym"
 ],
 "glute bridge": [
-"SKOMwg1JLrU",
-"National Academy of Sports Medicine (NASM)"
+"tqp5XQPpTxY",
+"PureGym"
 ],
 "hip abduction": [
 "G_8LItOiZ0Q",
@@ -217,160 +217,160 @@ const EX_VIDEOS = {
 "PureGym"
 ],
 "calf raise": [
-"-M4-G8p8fmc",
-"Howcast"
+"Zep-wKHWkNM",
+"PureGym"
 ],
 "seated calf raise": [
 "3ZRe_QpvRPg",
 "PureGym"
 ],
 "deadlift": [
-"ZaTM37cfiDs",
-"Jeff Nippard"
+"GxsLrTzyGUU",
+"PureGym"
 ],
 "sumo deadlift": [
-"e7oLkRlT2CQ",
-"Squat University"
+"JbY72Him34Q",
+"PureGym"
 ],
 "good morning": [
-"vKPGe8zb2S4",
-"Buff Dudes"
+"nWyx81AfTos",
+"PureGym"
 ],
 "barbell row": [
-"Nqh7q3zDCoQ",
-"Jeremy Ethier Shorts"
+"FsK19s8eGFs",
+"PureGym"
 ],
 "bent over row": [
-"bm0_q9bR_HA",
-"National Academy of Sports Medicine (NASM)"
+"FsK19s8eGFs",
+"PureGym"
 ],
 "dumbbell row": [
-"gfUg6qWohTk",
-"ATHLEAN-X™"
+"ZRSGpBUVcNw",
+"PureGym"
 ],
 "seated cable row": [
-"xQNrFHEMhI4",
-"Bodybuilding.com"
+"lJoozxC0Rns",
+"PureGym"
 ],
 "cable row": [
-"vwHG9Jfu4sw",
-"Max Euceda"
+"lJoozxC0Rns",
+"PureGym"
 ],
 "lat pulldown": [
-"z-lxcsIN4T4",
-"Davis Diley"
+"JGeRYIZdojU",
+"PureGym"
 ],
 "close grip lat pulldown": [
 "IjoFCmLX7z0",
 "PureGym"
 ],
 "pull up": [
-"8Y7HfoamOJg",
-"Davis Diley"
+"PHdHnZcbsB8",
+"PureGym"
 ],
 "chin up": [
-"5_EI7a1LsS4",
-"Hybrid Calisthenics"
+"PHdHnZcbsB8",
+"PureGym"
 ],
 "weighted pull up": [
-"8Y7HfoamOJg",
-"Davis Diley"
+"PHdHnZcbsB8",
+"PureGym"
 ],
 "t bar row": [
-"yPis7nlbqdY",
-"Renaissance Periodization"
+"hYo72r8Ivso",
+"PureGym"
 ],
 "dumbbell pullover": [
 "jQjWlIwG4sI",
 "Renaissance Periodization"
 ],
 "straight arm pulldown": [
-"wcVDItawocI",
-"Bodybuilding.com"
+"ey9Fv3FGrRg",
+"PureGym"
 ],
 "barbell curl": [
-"N6paU6TGFWU",
-"Davis Diley"
+"N5x5M1x1Gd0",
+"PureGym"
 ],
 "dumbbell curl": [
 "cBSD6mQIPQk",
 "Nuffield Health"
 ],
 "bicep curl": [
-"cBSD6mQIPQk",
-"Nuffield Health"
+"MtXdEcW3Eog",
+"PureGym"
 ],
 "hammer curl": [
 "B4RznoFvTl4",
 "PureGym"
 ],
 "preacher curl": [
-"AR-oARBkYxI",
-"Colossus Fitness"
+"Zbs3ko8ycyg",
+"PureGym"
 ],
 "concentration curl": [
-"0AUGkch3tzc",
-"Howcast"
+"llD6MImgqe8",
+"PureGym"
 ],
 "cable curl": [
-"NFzTWp2qpiE",
-"Fit Father Project - Fitness For Busy Fathers"
+"GNlopToAZyg",
+"PureGym"
 ],
 "ez bar curl": [
-"d2r5TCqnR4Y",
-"ATHLEAN-X™"
+"N5x5M1x1Gd0",
+"PureGym"
 ],
 "tricep pushdown": [
-"NvZKjiZ8NYc",
-"iyaji adoga"
+"LXkCrxn3caQ",
+"PureGym"
 ],
 "rope pushdown": [
-"qHDrQglWgS4",
-"Buff Dudes Workouts"
+"-xa-6cQaZKY",
+"Renaissance Periodization"
 ],
 "skull crusher": [
-"S0fmDR60X-o",
-"Max Euceda"
+"sDxcKjCqXAo",
+"PureGym"
 ],
 "overhead tricep extension": [
-"fYqswDVbJDg",
-"ScottHermanFitness"
+"9wxRhONFsRA",
+"PureGym"
 ],
 "tricep kickback": [
-"m9me06UBPKc",
-"Buff Dudes"
+"JPmbMOu4IYw",
+"PureGym"
 ],
 "plank": [
-"QpOgJLqeo14",
-"Nuffield Health"
+"q4rDeHYMcIg",
+"PureGym"
 ],
 "hanging leg raise": [
-"2n4UqRIJyk4",
-"Gerardi Performance"
+"Yrtvs-nEnk0",
+"PureGym"
 ],
 "cable crunch": [
 "CDO29I7PCoc",
 "Davis Diley"
 ],
 "crunch": [
-"Xyd_fa5zoEU",
-"LIVESTRONG"
+"NnVhqMQRvmM",
+"PureGym"
 ],
 "sit up": [
-"onaQ0v_J5uU",
-"Nuffield Health"
+"N7hf1_vcX5w",
+"PureGym"
 ],
 "ab wheel": [
-"rqiTPdK1c_I",
-"Mind Pump TV"
+"SBO5aFR09D4",
+"PureGym"
 ],
 "russian twist": [
-"wkD8rjkodUI",
-"Howcast"
+"99T1EfpMwPA",
+"PureGym"
 ],
 "cable kickback": [
-"BNDw4ciQoQI",
-"Nuffield Health"
+"Ibwp50t3b1Y",
+"OPEX Fitness"
 ],
 "glute kickback": [
 "BNDw4ciQoQI",
