@@ -35,14 +35,22 @@ Deno.serve(async (req) => {
   await admin.from("ai_chat_usage").upsert({ user_id: user.id, day: today, count: (usage?.count ?? 0) + 1 });
 
   // The user's own data, so answers are personal.
-  const [{ data: profile }, { data: workouts }, { data: goals }, { data: activities }] = await Promise.all([
-    admin.from("profiles").select("username,bodyweight,active_split_id").eq("id", user.id).single(),
+  const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  const [{ data: profile }, { data: workouts }, { data: goals }, { data: activities }, { data: food }, { data: checkins }] = await Promise.all([
+    admin.from("profiles").select("username,bodyweight,active_split_id,protein_target,calorie_target").eq("id", user.id).single(),
     admin.from("workouts").select("day_name,performed_on,total_volume,lifts(exercise,weight,reps,target_reps,completed)")
       .eq("user_id", user.id).eq("finished", true).order("created_at", { ascending: false }).limit(10),
     admin.from("goals").select("exercise,target_weight,achieved_at").eq("user_id", user.id),
     admin.from("activities").select("kind,duration_min,distance_km,intensity,performed_on")
       .eq("user_id", user.id).order("created_at", { ascending: false }).limit(15),
+    admin.from("food_logs").select("eaten_on,calories,protein_g").eq("user_id", user.id).gte("eaten_on", weekAgo),
+    admin.from("checkins").select("day,mood,energy,soreness,sleep_hours,note").eq("user_id", user.id).gte("day", weekAgo).order("day"),
   ]);
+  const foodByDay: Record<string, { calories: number; protein_g: number }> = {};
+  for (const f of food ?? []) {
+    const d = (foodByDay[f.eaten_on] ??= { calories: 0, protein_g: 0 });
+    d.calories += f.calories; d.protein_g += Number(f.protein_g);
+  }
   const { data: split } = profile?.active_split_id
     ? await admin.from("splits").select("name,days").eq("id", profile.active_split_id).maybeSingle()
     : { data: null };
@@ -55,6 +63,9 @@ Deno.serve(async (req) => {
     split: split ? { name: split.name, days: split.days.map((d: any) => ({ day: d.name, exercises: d.exercises.map((e: any) => `${e.name} ${e.sets}x${e.reps}`) })) } : null,
     goals: goals ?? [], recent_workouts_newest_first: recent,
     recent_cardio_and_recovery_newest_first: activities ?? [],
+    targets: { protein_g: profile?.protein_target ?? null, calories: profile?.calorie_target ?? null },
+    food_totals_last_7_days: foodByDay,
+    daily_checkins_last_7_days_mood_energy_soreness_out_of_5: checkins ?? [],
     points_rules: "15 per active day, PRs, cardio minutes x effort, sauna/ice bath a little; 4 rest days a week free, -20 per extra day with nothing logged",
   };
 
@@ -69,7 +80,8 @@ Deno.serve(async (req) => {
       "You are the Outlift coach, a friendly, motivating personal trainer inside a gym tracking app. " +
       "Answer like a real coach texting: short paragraphs, plain words, a few emojis at most, no markdown headings. " +
       "Keep answers under 150 words unless asked for a full plan. Use the user's own data below when it helps " +
-      "(their split, recent sets, weights, goals) and give concrete numbers (sets, reps, kg). " +
+      "(their split, recent sets, weights, goals, food, sleep and how sore or tired they feel) and give concrete numbers (sets, reps, kg). " +
+      "If their check-ins show high soreness, low energy or poor sleep, suggest adjusting the session rather than pushing harder. " +
       "If they mention pain or an injury, give general guidance only and tell them to see a physio or doctor. " +
       "Don't give medical, diet-drug or extreme cutting advice.\n\nUSER DATA:\n" + JSON.stringify(context),
     messages: history,

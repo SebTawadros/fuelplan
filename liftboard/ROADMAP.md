@@ -13,7 +13,7 @@ Live app: https://outliftt.netlify.app · Backend: Supabase project `liftboard` 
 - Owner password reset, compact phone-friendly layout
 
 ## To do (in suggested order)
-1. Delete the `jacob` account (Supabase → Auth → search `jacob@users`), or add a "Remove user" owner tool
+1. Delete the `jacob` account: Me → Settings → Remove a user (type `jacob` exactly)
 2. Install the Claude GitHub App on SebTawadros/fuelplan so commits can be pushed
 3. Check the exercise videos on a phone and swap any that look wrong
 4. Buy a domain (e.g. outlift.app) and connect it to Netlify

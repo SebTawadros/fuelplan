@@ -369,6 +369,17 @@ label.f{margin:12px 0 6px}
 :root{--nav:68px}
 nav.bottom a{font-size:11px;gap:1px} nav.bottom a .ic{font-size:21px;width:44px;height:28px}
 .tiles{grid-template-columns:repeat(3,1fr);gap:8px}
+.scale{display:flex;gap:6px}
+.scale button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 0;font-size:20px;cursor:pointer}
+.scale button.on{background:var(--t-green);border-color:var(--lime);transform:scale(1.06)}
+.pbars{display:flex;gap:6px;align-items:flex-end;height:110px}
+.pb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;font-size:11px;color:var(--muted)}
+.pbf{width:100%;min-height:3px;border-radius:7px 7px 3px 3px;background:var(--t-blue);border:1px solid #d3e2fb}
+.pbf.hit{background:var(--lime);border-color:var(--lime)}
+.coach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.coach-grid div{background:rgba(255,255,255,.6);border:1px solid var(--line);border-radius:11px;padding:6px 8px;display:flex;flex-direction:column}
+.coach-grid span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.coach-grid b{font-size:14px} .coach-grid small{color:var(--muted);font-weight:400}
 .clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
 .linkbtn{border:none;background:none;color:var(--blue);font:inherit;font-size:13px;font-weight:600;padding:2px 0;cursor:pointer}
 details.tools summary{list-style:none;display:flex;flex-direction:column;gap:2px;cursor:pointer}
@@ -737,6 +748,8 @@ const routes = [
   [/^#\/qr$/, viewQR, 'train'],
   [/^#\/x\/(.+)$/, viewScan, 'train'],
   [/^#\/coach$/, viewCoach, 'home'],
+  [/^#\/food$/, viewFood, 'home'],
+  [/^#\/coachdash\/([\w-]+)$/, viewCoachDash, 'social'],
   [/^#\/settings$/, viewSettings, 'profile'],
 ];
 let renderSeq = 0;
@@ -880,6 +893,17 @@ A.adminReset = async el => {
   $('#rsUser').value = ''; $('#rsPw').value = '';
   toast(`Password reset for ${data.username} 🔑`, 'Tell them their new password.', 'pr', null, 6000);
 };
+A.adminDelete = async el => {
+  const username = $('#rmUser').value.trim(); if (!username) return toast('Type their exact username', '', 'loss');
+  const p = Object.values(S.profiles).find(x => x.username === username);
+  if (!p) return toast('No user called exactly “' + username + '”', 'Usernames are case-sensitive here.', 'loss');
+  if (!await confirmBox('Remove ' + username + '?', `This deletes ${username}’s account and everything they logged. It can’t be undone.`, 'Remove forever')) return;
+  el.disabled = true;
+  const { data, error } = await sb.functions.invoke('admin-delete', { body: { username } });
+  el.disabled = false;
+  if (error) { let m = error.message; try { m = (await error.context.json()).error || m; } catch {} return toast('Couldn’t remove user', m, 'loss'); }
+  delete S.profiles[p.id]; $('#rmUser').value = ''; toast(data.username + ' removed', '', 'pr'); render();
+};
 A.logout = async () => {
   if (!await confirmBox('Log out?', 'You’ll stop getting notifications on this device.', 'Log out')) return;
   await disablePush();
@@ -895,13 +919,14 @@ function nextDay(split, workouts) {
   return (i + 1) % split.days.length;
 }
 async function viewHome() {
-  const [workouts, board, feed, recap, plans, acts] = await Promise.all([
+  const [workouts, board, feed, recap, plans, acts, ck] = await Promise.all([
     ensureMyWorkouts(true),
     points('public', weekAgoISO()),
     q(sb.from('workouts').select('id,user_id,day_name,total_volume,created_at').eq('finished', true).order('created_at', { ascending: false }).limit(6)),
     sb.from('recaps').select('*').is('group_id', null).order('created_at', { ascending: false }).limit(1).maybeSingle().then(r => r.data),
     q(sb.from('assignments').select('*').eq('client_id', S.me.id).eq('status', 'new').order('created_at', { ascending: false })),
     q(sb.from('activities').select('*').order('created_at', { ascending: false }).limit(6)),
+    sb.from('checkins').select('*').eq('user_id', S.me.id).eq('day', localDate()).maybeSingle().then(r => r.data),
   ]);
   const live = [...feed.map(w => ({ t: 'w', at: w.created_at, w })), ...acts.map(a => ({ t: 'a', at: a.created_at, a }))]
     .sort((x, y) => new Date(y.at) - new Date(x.at)).slice(0, 8);
@@ -939,11 +964,11 @@ async function viewHome() {
     ${hero}
     <div class="tiles mb">
       <button class="tile t-blue" data-act="go" data-to="#/train"><span>🏋️</span>Train</button>
+      <button class="tile t-teal" data-act="goCardio"><span>🏃</span>Cardio</button>
+      <button class="tile t-orange" data-act="go" data-to="#/food"><span>🍽️</span>Food</button>
       <button class="tile t-purple" data-act="go" data-to="#/coach"><span>🤖</span>Ask coach</button>
       <button class="tile t-gold" data-act="go" data-to="#/leaderboard"><span>🏆</span>Leaderboard</button>
       <button class="tile t-pink" data-act="go" data-to="#/groups"><span>👥</span>Groups</button>
-      <button class="tile t-teal" data-act="goCardio"><span>🏃</span>Log cardio</button>
-      <button class="tile t-orange" data-act="logAct" data-k="sauna"><span>🧖</span>Log sauna</button>
     </div>
     <div class="stats mb">
       <div class="stat"><div class="v" data-count="${workouts.length}">0</div><div class="l">Workouts</div></div>
@@ -951,6 +976,7 @@ async function viewHome() {
       <div class="stat"><div class="v"><span data-count="${streak}">0</span>🔥</div><div class="l">Week streak</div></div>
       <div class="stat"><div class="v ${rank === 1 ? 'gold' : ''}">${rank ? '#' + rank : '—'}</div><div class="l">${myRow?.points ? myRow.points + ' pts wk' : 'Rank'}</div></div>
     </div>
+    ${checkinCard(ck)}
     ${notifCard()}
     ${recapCard(recap)}
     <div class="sec-title"><h2>Live feed</h2><a href="#/social" class="small lime">See all →</a></div>
@@ -1350,6 +1376,8 @@ const POINT_RULES = [
   ['consistency_pts', '📆', 'Consistency', '25 for every week with 3+ training days'],
   ['goal_pts', '🎯', 'Goals', '30 for every goal you smash'],
   ['hype_pts', '📣', 'Team spirit', '1 per reaction or comment you give (max 20)'],
+  ['nutrition_pts', '🍽️', 'Nutrition', '5 per day you log food, +5 more when you hit your protein target'],
+  ['checkin_pts', '📝', 'Check-ins', '3 per day you do your daily check-in'],
   ['drop_pts', '📉', 'Going backwards', '−5 when a lift drops more than 5% below your best'],
   ['missed_pts', '🛋️', 'Days off', '4 rest days a week are free. Every extra day with nothing logged is −20'],
 ];
@@ -1796,6 +1824,131 @@ function cardioSummary(acts) {
     ${acts.slice(0, 5).map(a => activityCard(a, false)).join('')}`;
 }
 
+/* ================== NUTRITION ================== */
+const FOOD_PRESETS = [
+  ['🥤 Protein shake', 120, 25, 3, 2], ['🍗 Chicken breast 150g', 250, 46, 0, 5], ['🥚 3 eggs', 210, 18, 1, 15],
+  ['🥣 Greek yoghurt 200g', 140, 20, 8, 4], ['🍚 Rice 1 cup', 210, 4, 45, 0], ['🥩 Steak 200g', 460, 50, 0, 28],
+  ['🐟 Tuna can', 130, 28, 0, 1], ['🍌 Banana', 105, 1, 27, 0], ['🥜 Peanut butter 2 tbsp', 190, 8, 6, 16], ['🍞 Toast x2', 160, 6, 30, 2],
+];
+const sumFood = rows => rows.reduce((t, f) => ({ cal: t.cal + f.calories, p: t.p + +f.protein_g, c: t.c + (+f.carbs_g || 0), f: t.f + (+f.fat_g || 0) }), { cal: 0, p: 0, c: 0, f: 0 });
+async function viewFood() {
+  const today = localDate(), wk = new Date(); wk.setDate(wk.getDate() - 6);
+  const rows = await q(sb.from('food_logs').select('*').eq('user_id', S.me.id).gte('eaten_on', localDate(wk)).order('created_at', { ascending: false }));
+  const todays = rows.filter(r => r.eaten_on === today), t = sumFood(todays);
+  const pt = S.me.protein_target, ct = S.me.calorie_target;
+  const bar = (v, max, cls = '') => `<div class="progress ${cls}"><i style="width:${max ? Math.min(100, v / max * 100) : 0}%"></i></div>`;
+  const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); const k = localDate(d); return [k, sumFood(rows.filter(r => r.eaten_on === k)).p]; });
+  const maxP = Math.max(pt || 0, ...days.map(d => d[1]), 1);
+  const pts = (todays.length ? 5 : 0) + (pt && t.p >= pt ? 5 : 0);
+  return `<div class="row between"><h1>🍽️ Food</h1><span class="pill lime">+${pts} pts today</span></div>
+    <p class="help mt">Log what you eat: 5 points a day for logging, +5 more when you hit your protein target. Only you and your coaches can see this.</p>
+    <div class="card hl"><div class="row between"><b>Today</b><span class="tiny muted">${todays.length} item${todays.length === 1 ? '' : 's'}</span></div>
+      <div class="row between mt"><span>🔥 Calories</span><b>${t.cal}${ct ? ` / ${ct}` : ''}</b></div>${ct ? bar(t.cal, ct) : ''}
+      <div class="row between mt"><span>💪 Protein</span><b>${Math.round(t.p)}g${pt ? ` / ${pt}g` : ''}</b></div>${pt ? bar(t.p, pt) : ''}
+      <div class="tiny muted mt">Carbs ${Math.round(t.c)}g · Fat ${Math.round(t.f)}g</div>
+      ${!pt ? `<button class="linkbtn mt" data-act="setTargets">🎯 Set daily targets ›</button>` : ''}</div>
+    <div class="card purple"><b>✨ Describe your meal</b><div class="tiny muted">AI works out the calories and protein. Check the numbers before saving.</div>
+      <div class="row mt"><input class="inp" id="foodText" placeholder="e.g. 2 eggs, toast and a coffee" maxlength="300"><button class="btn primary" data-act="aiFood">Estimate</button></div></div>
+    <div class="card"><b>➕ Add food</b>
+      <div class="chip-list mt">${FOOD_PRESETS.map((p, i) => `<button class="chip" data-act="foodPreset" data-i="${i}">${p[0]}</button>`).join('')}</div>
+      <div class="tip mt">Tap a quick-add or fill it in yourself.</div>
+      <input class="inp mt" id="fName" placeholder="What did you eat?" maxlength="120">
+      <div class="row mt"><input class="inp" id="fCal" type="number" inputmode="numeric" placeholder="Calories"><input class="inp" id="fPro" type="number" inputmode="decimal" placeholder="Protein g"></div>
+      <div class="row mt"><input class="inp" id="fCarb" type="number" inputmode="decimal" placeholder="Carbs g"><input class="inp" id="fFat" type="number" inputmode="decimal" placeholder="Fat g"></div>
+      <div class="mt">${btn('Save to today', 'saveFood', '', 'primary full')}</div></div>
+    ${todays.length ? `<div class="sec-title"><h2>Eaten today</h2></div><div class="card">${todays.map(f => `<div class="wk-ex"><span>${esc(f.name)}</span><span class="small">${f.calories} cal · ${Math.round(f.protein_g)}g <button class="xbtn" data-act="delFood" data-id="${f.id}" aria-label="Remove">✕</button></span></div>`).join('')}</div>` : ''}
+    <div class="sec-title"><h2>Protein this week</h2>${pt ? `<button class="linkbtn" data-act="setTargets">Targets ›</button>` : ''}</div>
+    <div class="card"><div class="pbars">${days.map(([d, p]) => `<div class="pb"><div class="pbf ${pt && p >= pt ? 'hit' : ''}" style="height:${Math.round(p / maxP * 100)}%"></div><span>${new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'narrow' })}</span></div>`).join('')}</div>
+      ${pt ? `<div class="tiny muted mt">Green = hit your ${pt}g target</div>` : ''}</div>`;
+}
+const fillFood = (n, cal, p, c, f) => { $('#fName').value = n; $('#fCal').value = cal; $('#fPro').value = p; $('#fCarb').value = c ?? ''; $('#fFat').value = f ?? ''; $('#fName').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+A.foodPreset = el => { const p = FOOD_PRESETS[+el.dataset.i]; fillFood(p[0].replace(/^\S+\s/, ''), p[1], p[2], p[3], p[4]); };
+A.aiFood = async el => {
+  const text = $('#foodText').value.trim(); if (!text) return toast('Describe what you ate', '', 'loss');
+  el.disabled = true; el.textContent = '…';
+  const { data, error } = await sb.functions.invoke('ai-food', { body: { text } });
+  el.disabled = false; el.textContent = 'Estimate';
+  if (error) { let m = error.message; try { m = (await error.context.json()).error || m; } catch {} return toast('Couldn’t estimate', m, 'loss'); }
+  const e = data.estimate; fillFood(e.name, e.calories, Math.round(e.protein_g), Math.round(e.carbs_g), Math.round(e.fat_g));
+  toast('Estimated ✨', `${e.calories} cal · ${Math.round(e.protein_g)}g protein. Check it, then save.`, 'pr');
+};
+A.saveFood = async () => {
+  const name = $('#fName').value.trim(); if (!name) return toast('What did you eat?', '', 'loss');
+  const num = id => { const v = parseFloat($(id).value); return isNaN(v) ? null : v; };
+  await q(sb.from('food_logs').insert({ user_id: S.me.id, name, calories: Math.round(num('#fCal') || 0), protein_g: num('#fPro') || 0, carbs_g: num('#fCarb'), fat_g: num('#fFat'), eaten_on: localDate() }));
+  sound('badge'); toast('Logged 🍽️', name, 'pr'); render();
+};
+A.delFood = async el => { await q(sb.from('food_logs').delete().eq('id', el.dataset.id)); render(); };
+A.setTargets = () => {
+  modal(`<h2>🎯 Daily targets</h2><p class="small muted mt">A common protein target is about 1.6–2.2g per kg of bodyweight.${S.me.bodyweight ? ` For you that’s roughly ${Math.round(S.me.bodyweight * 1.6)}–${Math.round(S.me.bodyweight * 2.2)}g.` : ''}</p>
+    <label class="f">Protein (g per day)</label><input class="inp" id="tPro" type="number" inputmode="numeric" value="${esc(S.me.protein_target ?? '')}" placeholder="e.g. 150">
+    <label class="f">Calories (optional)</label><input class="inp" id="tCal" type="number" inputmode="numeric" value="${esc(S.me.calorie_target ?? '')}" placeholder="e.g. 2500">
+    <div class="mt2">${btn('Save targets', 'saveTargets', 'Hitting your protein target earns +5 points a day.', 'primary full')}</div>`);
+};
+A.saveTargets = async () => {
+  const p = parseInt($('#tPro').value) || null, c = parseInt($('#tCal').value) || null;
+  await q(sb.from('profiles').update({ protein_target: p, calorie_target: c }).eq('id', S.me.id));
+  Object.assign(S.me, { protein_target: p, calorie_target: c }); closeModal(); toast('Targets saved 🎯', '', 'pr'); render();
+};
+
+/* ================== DAILY CHECK-IN ================== */
+const FACES = ['😫', '😕', '😐', '🙂', '😁'];
+function checkinCard(ck) {
+  if (ck) return `<div class="card teal"><div class="row"><div style="font-size:24px">${FACES[ck.mood - 1]}</div><div class="grow"><b>Checked in today</b>
+    <div class="tiny muted">Energy ${ck.energy}/5 · Soreness ${ck.soreness}/5${ck.sleep_hours ? ` · ${ck.sleep_hours}h sleep` : ''}</div></div><button class="btn sm" data-act="checkin">Edit</button></div></div>`;
+  return `<div class="card teal"><div class="row"><div style="font-size:24px">📝</div><div class="grow"><b>How are you feeling today?</b>
+    <div class="tiny muted">10-second check-in · +3 points · helps your coach</div></div><button class="btn sm primary" data-act="checkin">Check in</button></div></div>`;
+}
+A.checkin = async () => {
+  const ck = await sb.from('checkins').select('*').eq('user_id', S.me.id).eq('day', localDate()).maybeSingle().then(r => r.data) || {};
+  const scale = (key, label, faces, val) => `<label class="f">${label}</label><div class="scale" data-k="${key}">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="${val === n ? 'on' : ''}" data-v="${n}">${faces ? faces[n - 1] : n}</button>`).join('')}</div>`;
+  const m = modal(`<h2>📝 Daily check-in</h2>
+    ${scale('mood', 'Mood', FACES, ck.mood || 3)}${scale('energy', 'Energy', ['🪫', '😮‍💨', '🙂', '⚡', '🚀'], ck.energy || 3)}
+    ${scale('soreness', 'Soreness (1 = none, 5 = very sore)', null, ck.soreness || 2)}
+    <label class="f">Hours of sleep</label><input class="inp" id="ckSleep" type="number" inputmode="decimal" step="0.5" value="${esc(ck.sleep_hours ?? '')}" placeholder="e.g. 7.5">
+    <label class="f">Anything to note? (optional)</label><input class="inp" id="ckNote" maxlength="300" value="${esc(ck.note || '')}" placeholder="e.g. left knee a bit tight">
+    <div class="mt2">${btn('Save check-in', 'saveCheckin', 'Your coach sees this. The AI coach uses it too.', 'primary full')}</div>`);
+  m.addEventListener('click', e => { const b = e.target.closest('.scale button'); if (b) $$('button', b.parentElement).forEach(x => x.classList.toggle('on', x === b)); });
+};
+A.saveCheckin = async () => {
+  const v = k => +($(`.scale[data-k="${k}"] .on`)?.dataset.v || 3);
+  await q(sb.from('checkins').upsert({ user_id: S.me.id, day: localDate(), mood: v('mood'), energy: v('energy'), soreness: v('soreness'),
+    sleep_hours: parseFloat($('#ckSleep').value) || null, note: $('#ckNote').value.trim() }));
+  closeModal(); sound('badge'); toast('Checked in ✅', '+3 points', 'pr'); render();
+};
+
+/* ================== COACH DASHBOARD ================== */
+async function viewCoachDash(gid) {
+  const g = await q(sb.from('gyms').select('*').eq('id', gid).maybeSingle());
+  const { data: rows, error } = await sb.rpc('coach_overview', { p_group: gid });
+  if (error) return `<a href="#/group/${gid}" class="back">← Group</a><div class="empty"><span class="e">🔒</span>${esc(error.message)}</div>`;
+  const clients = rows.filter(r => r.user_id !== S.me.id);
+  const flag = r => { const d = r.last_active ? daysSince(r.last_active + 'T00:00:00') : null;
+    return d == null ? '<span class="pill red">never trained</span>' : d >= 4 ? `<span class="pill red">${d}d inactive</span>` : d <= 0 ? '<span class="pill lime">today</span>' : `<span class="pill">${d}d ago</span>`; };
+  const need = clients.filter(r => !r.last_active || daysSince(r.last_active + 'T00:00:00') >= 4 || (r.soreness >= 4) || (r.mood && r.mood <= 2));
+  return `<a href="#/group/${gid}" class="back">← ${esc(g?.name || 'Group')}</a>
+    <h1 class="mt">📊 Coach dashboard</h1><p class="help mt">Everyone in ${esc(g?.name || 'this group')} over the last 7 days. People who need attention are at the top.</p>
+    <div class="stats three mb"><div class="stat"><div class="v">${clients.length}</div><div class="l">Clients</div></div>
+      <div class="stat"><div class="v">${clients.filter(r => r.days_7 > 0).length}</div><div class="l">Active this wk</div></div>
+      <div class="stat"><div class="v ${need.length ? 'red' : ''}">${need.length}</div><div class="l">Need attention</div></div></div>
+    ${clients.map(r => `<div class="card ${need.includes(r) ? 'warn' : ''}">
+      <div class="row">${avatar(r)}<div class="grow"><b>${esc(r.username)}</b><div class="tiny muted">${r.points_7} pts · ${r.days_7} day${r.days_7 === 1 ? '' : 's'} · ${r.prs_7} PR${r.prs_7 === 1 ? '' : 's'}${r.cardio_min_7 ? ` · ${r.cardio_min_7} min cardio` : ''}</div></div>${flag(r)}</div>
+      <div class="coach-grid mt">
+        <div><span>Mood</span><b>${r.mood ? FACES[Math.round(r.mood) - 1] + ' ' + r.mood : '–'}</b></div>
+        <div><span>Energy</span><b>${r.energy ?? '–'}</b></div>
+        <div><span>Soreness</span><b class="${r.soreness >= 4 ? 'red' : ''}">${r.soreness ?? '–'}</b></div>
+        <div><span>Sleep</span><b>${r.sleep ? r.sleep + 'h' : '–'}</b></div>
+        <div><span>Protein</span><b>${r.protein_avg ? r.protein_avg + 'g' : '–'}${r.protein_target ? `<small>/${r.protein_target}</small>` : ''}</b></div>
+        <div><span>Missed</span><b class="${r.missed_7 ? 'red' : ''}">${r.missed_7}</b></div>
+      </div>
+      ${r.last_note ? `<div class="small mt">📝 “${esc(r.last_note)}”</div>` : ''}
+      ${r.drops_7 ? `<div class="small red mt">📉 Went backwards on ${r.drops_7} lift${r.drops_7 > 1 ? 's' : ''}</div>` : ''}
+      ${r.open_plans ? `<div class="tiny muted mt">📋 ${r.open_plans} plan${r.open_plans > 1 ? 's' : ''} waiting to be accepted</div>` : ''}
+      <div class="row mt"><button class="btn sm grow" data-act="assignPlan" data-u="${r.user_id}">📋 Assign plan</button><button class="btn sm grow" data-act="go" data-to="#/chat/${r.user_id}">💬 Message</button><button class="btn sm" data-act="nudge" data-id="${r.user_id}">👊</button></div>
+      <a href="#/user/${r.user_id}" class="tiny muted" style="display:block;margin-top:8px">View full profile ›</a></div>`).join('') || '<div class="empty"><span class="e">👥</span>No clients yet. Share your invite code.</div>'}
+    <div class="card purple mt">${btn('✏️ Build a custom plan', 'newSplit', 'Make a program with your own exercises, sets and reps, then assign it to anyone here.', 'full')}</div>`;
+}
+
 /* ================== GROUPS ================== */
 const KIND = { crew: ['👥', 'Crew', 'Friends or family training together'], gym: ['🏠', 'Gym', 'Everyone who trains at one gym'], coach: ['🧑‍🏫', 'Coaching', 'A PT or physio with their clients'] };
 const inviteLink = code => location.origin + location.pathname + '#/join/' + code;
@@ -1859,6 +2012,7 @@ async function viewGroup(id) {
     <div class="card blue mt"><div class="row between"><div><div class="tiny muted">INVITE CODE</div><div class="display" style="font-size:30px;letter-spacing:3px">${esc(g.invite_code)}</div></div>
       ${btn('📤 Share invite', 'shareInvite', '', 'primary', `data-code="${esc(g.invite_code)}" data-name="${esc(g.name)}"`)}</div>
       <div class="tip mt">Send the link or code. Anyone who opens it joins straight away.</div></div>
+    ${lead ? `<div class="card purple">${btn('📊 Coach dashboard', 'go', 'Everyone at a glance: who trained, who’s slacking, mood, soreness, sleep and protein.', 'primary full', `data-to="#/coachdash/${id}"`)}</div>` : ''}
     ${g.kind !== 'crew' && lead ? `<div class="card purple">${btn('🔳 Make QR codes for machines', 'go', 'Print codes for each machine. Members scan to see how to use it and log it.', 'full', 'data-to="#/qr"')}</div>` : ''}
     <div class="sec-title"><h2>This week</h2><button class="btn sm" data-act="howRank">How points work</button></div>
     ${rows.map((r, i) => lrow(r, i + 1, i)).join('')}
@@ -2042,7 +2196,11 @@ async function viewSettings() {
       <datalist id="userList">${Object.values(S.profiles).map(p => `<option value="${esc(p.username)}">`).join('')}</datalist>
       <label class="f">New password for them</label>
       <input class="inp" id="rsPw" autocomplete="off" placeholder="6+ characters">
-      <div class="mt">${btn('Reset their password', 'adminReset', 'Their old password stops working straight away.', 'primary full')}</div></div>` : ''}`;
+      <div class="mt">${btn('Reset their password', 'adminReset', 'Their old password stops working straight away.', 'primary full')}</div></div>
+    <div class="card warn"><h3>🗑️ Remove a user</h3>
+      <p class="small muted mt">Deletes the account and everything they logged. Type the username <b>exactly</b>, capitals and dots included, so the wrong person can’t be removed.</p>
+      <input class="inp mt" id="rmUser" list="userList" autocapitalize="off" placeholder="Exact username">
+      <div class="mt">${btn('Remove user', 'adminDelete', 'This can’t be undone.', 'danger full')}</div></div>` : ''}`;
 }
 function toggleRowFn(label, on, act, tip) {
   return `<div class="row between mt"><div class="grow"><b class="small">${label}</b><div class="tip">${tip}</div></div><button class="btn sm ${on ? 'primary' : ''}" data-act="${act}">${on ? 'ON' : 'OFF'}</button></div>`;
