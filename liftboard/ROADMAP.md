@@ -10,15 +10,15 @@ Live app: https://outliftt.netlify.app · Backend: Supabase project `liftboard` 
 - Coach mode: group owners assign plans to members
 - Exercise screens: demo video (mostly PureGym), real start/finish photos, steps, tips, equipment
 - QR codes for gym machines, AI chat coach, AI recap, push notifications, badges, goals
-- Owner password reset, compact phone-friendly layout
+- Owner password reset, owner remove-user tool, compact phone-friendly layout
+- Coach / physio dashboard: every client's last 7 days, mood, soreness, sleep, protein, flags for who needs attention
+- Nutrition log with AI meal estimates, protein/calorie targets and points
+- Daily mood, energy, soreness and sleep check-ins (points, coach dashboard, AI coach)
 
 ## To do (in suggested order)
 1. Delete the `jacob` account: Me → Settings → Remove a user (type `jacob` exactly)
 2. Install the Claude GitHub App on SebTawadros/fuelplan so commits can be pushed
 3. Check the exercise videos on a phone and swap any that look wrong
 4. Buy a domain (e.g. outlift.app) and connect it to Netlify
-5. Coach / physio dashboard: all clients at a glance, assigned exercises with sets, reps and notes
-6. Paid tier for gyms and PTs (Stripe)
-7. Nutrition tracking (meals / protein targets, points)
-8. Mood, sleep and recovery check-ins feeding the AI coach
-9. Film own exercise clips and swap them in
+5. Paid tier for gyms and PTs (needs a Stripe account)
+6. Film own exercise clips and swap them in
